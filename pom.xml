@@ -58,6 +58,11 @@
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.signomix</groupId>
+      <artifactId>signomix-common</artifactId>
+      <version>1.9.0</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
