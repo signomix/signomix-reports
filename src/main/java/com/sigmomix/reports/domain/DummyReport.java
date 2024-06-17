@@ -11,6 +11,8 @@ public class DummyReport implements ReportIface{
             String language) {
         
                 ReportResult result = new ReportResult();
+                result.query = query;
+                result.contentType = "application/json";
                 result.setId(-1L);
                 result.setTitle("Dummy report");
                 result.setDescription("This is a dummy report");
@@ -35,6 +37,12 @@ public class DummyReport implements ReportIface{
 
                 return result;
 
+    }
+
+    @Override
+    public ReportResult getReportResult(DataQuery query, String language) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getReportResult'");
     }
 
 }

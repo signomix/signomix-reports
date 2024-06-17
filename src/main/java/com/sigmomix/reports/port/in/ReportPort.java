@@ -16,4 +16,8 @@ public class ReportPort {
         return reportRunner.generateReport(query, organization, tenant, path, language);
     }
 
+    public ReportResult getReportResult(String query, String className, String language) {
+        return reportRunner.generateReport(query, className, language);
+    } 
+
 }

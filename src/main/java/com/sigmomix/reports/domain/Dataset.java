@@ -6,19 +6,23 @@ import java.util.ArrayList;
  * A dataset is a list of rows where each row is a list of numbers.
  */
 public class Dataset {
-    /** The total number of matching rows in the database without considering the query limit */
+    /** The total number of data rows */
     public Long size;
     /** The resulting data */
     public ArrayList<DatasetRow> data;
-    /** Dataset name */
+    /** Datasource EUI (optional) */
+    public String eui;
+    /** Datasource name - this could be the name of the datasource (if eui is not null) 
+     *  or the name of the dataset not related to eui (if eui is null)
+     */
     public String name;
 
     public Dataset() {
         data = new ArrayList<DatasetRow>();
     }
 
-    public Dataset(String name) {
-        this.name = name;
+    public Dataset(String eui) {
+        this.eui = eui;
         data = new ArrayList<DatasetRow>();
     }
 }

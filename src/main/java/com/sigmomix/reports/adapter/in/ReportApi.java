@@ -5,6 +5,7 @@ import com.sigmomix.reports.port.in.ReportPort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
@@ -23,6 +24,15 @@ public class ReportApi {
             @QueryParam("query") String query,
             @QueryParam("language") String language) {
         return Response.ok().entity(reportPort.getReportResult(query, organization, tenant, path, language)).build();
+    }
+
+    @GET    
+    @Path("/class")
+    public Response getReportClass(@HeaderParam("Authentication") String token,
+            @QueryParam("class") String className,
+            @QueryParam("query") String query,
+            @QueryParam("language") String language) {
+        return Response.ok().entity(reportPort.getReportResult(query, className, language)).build();
     }
 
 }

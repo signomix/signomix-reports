@@ -8,11 +8,22 @@ import com.signomix.common.db.DataQuery;
 public class ReportResult {
     public HashMap<String, Dataset> data;
     public HashMap<String, DatasetHeader> headers;
-    public String title;
-    public String description;
-    public Long id;
-    public Timestamp created;
-    public DataQuery query;
+    public String title=null;
+    public String description=null;
+    public Long id=null;
+    public Timestamp created=null;
+    public DataQuery query=null;
+    public String content=null;
+    public String contentType=null;
+
+    public ReportResult() {
+        data = new HashMap<String, Dataset>();
+        headers = new HashMap<String, DatasetHeader>();
+    }
+
+    public ReportResult(DataQuery query, String language) {
+        this.query=query;
+    }
 
     public ReportResult error(String message) {
         this.title = "Error";

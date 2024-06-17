@@ -1,5 +1,7 @@
 package com.sigmomix.reports.domain;
 
+import java.lang.reflect.InvocationTargetException;
+
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.ReportDaoIface;
@@ -40,8 +42,35 @@ public class ReportRunner {
         return result;
     }
 
+    public ReportResult generateReport(String query, String className, String language) {
+        DataQuery dataQuery;
+        try {
+            dataQuery = DataQuery.parse(query);
+        } catch (DataQueryException e) {
+            return new ReportResult().error(e.getMessage());
+        }
+        ReportIface report = (ReportIface)getReportInstance(className);
+        if(null==report){
+            return new ReportResult().error("Class not found: "+dataQuery.getClassName());
+        }
+        ReportResult result = report.getReportResult(dataQuery, language);
+        return result;
+    }
+
     private Object getReportInstance(){
         return new DummyReport();
+    }
+
+    private ReportIface getReportInstance(String className){
+        ReportIface report=null;
+        try {
+            report = (ReportIface)Class.forName(className).getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+                | NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return report;
     }
 
 }
