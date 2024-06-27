@@ -21,8 +21,8 @@ public class Dataset {
         data = new ArrayList<DatasetRow>();
     }
 
-    public Dataset(String eui) {
-        this.eui = eui;
+    public Dataset(String name) {
+        this.name = name;
         data = new ArrayList<DatasetRow>();
     }
 }

@@ -9,7 +9,7 @@ public class DummyReport implements ReportIface{
     @Override
     public ReportResult getReportResult(DataQuery query, Integer organization, Integer tenant, String path,
             String language) {
-        
+                String reportName = "dataset1";
                 ReportResult result = new ReportResult();
                 result.query = query;
                 result.contentType = "application/json";
@@ -17,14 +17,15 @@ public class DummyReport implements ReportIface{
                 result.setTitle("Dummy report");
                 result.setDescription("This is a dummy report");
                 result.setTimestamp(new Timestamp(System.currentTimeMillis()));
-                result.setQuery(query);
+                result.setQuery(reportName, query);
 
-                DatasetHeader header = new DatasetHeader("dataset1");
+                DatasetHeader header = new DatasetHeader(reportName);
                 header.columns.add("temperature");
                 header.columns.add("humidity");
                 result.addDatasetHeader(header);
 
-                Dataset data = new Dataset("dataset1");
+                Dataset data = new Dataset(reportName);
+                data.eui = "123456";
                 data.size=1000L;
                 for (int i = 0; i < 10; i++) {
                     DatasetRow row = new DatasetRow();

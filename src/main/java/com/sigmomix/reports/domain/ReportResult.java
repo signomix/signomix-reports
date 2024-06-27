@@ -1,6 +1,7 @@
 package com.sigmomix.reports.domain;
 
 import java.sql.Timestamp;
+import java.time.DayOfWeek;
 import java.util.HashMap;
 
 import com.signomix.common.db.DataQuery;
@@ -13,15 +14,18 @@ public class ReportResult {
     public Long id=null;
     public Timestamp created=null;
     public DataQuery query=null;
+    public HashMap<String, DataQuery> queries;
     public String content=null;
     public String contentType=null;
 
     public ReportResult() {
         data = new HashMap<String, Dataset>();
         headers = new HashMap<String, DatasetHeader>();
+        queries = new HashMap<String, DataQuery>();
     }
 
     public ReportResult(DataQuery query, String language) {
+        this();
         this.query=query;
     }
 
@@ -75,12 +79,12 @@ public class ReportResult {
         this.id = id;
     }
 
-    public DataQuery getQuery() {
-        return query;
+    public DataQuery getQuery(String name) {
+        return queries.get(name);
     }
 
-    public void setQuery(DataQuery query) {
-        this.query = query;
+    public void setQuery(String name, DataQuery query) {
+        queries.put(name, query);
     }
 
 }
