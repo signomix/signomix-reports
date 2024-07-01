@@ -2,6 +2,7 @@ package com.sigmomix.reports.port.in;
 
 import com.sigmomix.reports.domain.ReportResult;
 import com.sigmomix.reports.domain.ReportRunner;
+import com.signomix.common.User;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -16,8 +17,8 @@ public class ReportPort {
         return reportRunner.generateReport(query, organization, tenant, path, language);
     }
 
-    public ReportResult getReportResult(String query, String className, String language) {
-        return reportRunner.generateReport(query, className, language);
-    } 
+    public ReportResult getReportResult(String query, String language, User user) {
+        return reportRunner.generateReport(query, language, user);
+    }
 
 }

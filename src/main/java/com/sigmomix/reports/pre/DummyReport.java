@@ -1,7 +1,12 @@
-package com.sigmomix.reports.domain;
+package com.sigmomix.reports.pre;
 
 import java.sql.Timestamp;
 
+import com.sigmomix.reports.domain.Dataset;
+import com.sigmomix.reports.domain.DatasetHeader;
+import com.sigmomix.reports.domain.DatasetRow;
+import com.sigmomix.reports.domain.ReportIface;
+import com.sigmomix.reports.domain.ReportResult;
 import com.signomix.common.db.DataQuery;
 
 public class DummyReport implements ReportIface{
@@ -11,7 +16,7 @@ public class DummyReport implements ReportIface{
             String language) {
                 String reportName = "dataset1";
                 ReportResult result = new ReportResult();
-                result.query = query;
+                result.setQuery("default", query);
                 result.contentType = "application/json";
                 result.setId(-1L);
                 result.setTitle("Dummy report");

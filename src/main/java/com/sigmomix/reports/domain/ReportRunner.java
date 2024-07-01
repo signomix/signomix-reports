@@ -2,8 +2,13 @@ package com.sigmomix.reports.domain;
 
 import java.lang.reflect.InvocationTargetException;
 
+import org.jboss.logging.Logger;
+
+import com.sigmomix.reports.pre.DummyReport;
+import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
+import com.signomix.common.db.IotDatabaseException;
 import com.signomix.common.db.ReportDaoIface;
 
 import io.agroal.api.AgroalDataSource;
@@ -17,6 +22,9 @@ import jakarta.inject.Inject;
 public class ReportRunner {
 
     @Inject
+    Logger logger;
+
+    @Inject
     @DataSource("olap")
     AgroalDataSource olapDs;
 
@@ -27,44 +35,70 @@ public class ReportRunner {
         reportDao.setDatasource(olapDs);
     }
 
-    public ReportResult generateReport(String query, Integer organization, Integer tenant, String path, String language) {
+    public ReportResult generateReport(String query, Integer organization, Integer tenant, String path,
+            String language) {
         DataQuery dataQuery;
         try {
             dataQuery = DataQuery.parse(query);
         } catch (DataQueryException e) {
             return new ReportResult().error(e.getMessage());
         }
-        ReportIface report = (ReportIface)getReportInstance();
-        if(null==report){
-            return new ReportResult().error("Class not found: "+dataQuery.getClassName());
+        ReportIface report = (ReportIface) getReportInstance();
+        if (null == report) {
+            return new ReportResult().error("Class not found: " + dataQuery.getClassName());
         }
         ReportResult result = report.getReportResult(dataQuery, organization, tenant, path, language);
         return result;
     }
 
-    public ReportResult generateReport(String query, String className, String language) {
+    public ReportResult generateReport(String query, String language, User user) {
         DataQuery dataQuery;
+        String className = null;
         try {
             dataQuery = DataQuery.parse(query);
         } catch (DataQueryException e) {
-            return new ReportResult().error(e.getMessage());
+            e.printStackTrace();
+            return new ReportResult().error("DataQuery error: " + e.getMessage());
         }
-        ReportIface report = (ReportIface)getReportInstance(className);
-        if(null==report){
-            return new ReportResult().error("Class not found: "+dataQuery.getClassName());
+        try {
+            className = dataQuery.getClassName();
+            if (className == null) {
+                return new ReportResult().error("Class not defined in query");
+            }
+            boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
+                    user.tenant, user.path);
+            if (!isAvailable) {
+                return new ReportResult().error("Access denied for " + className);
+            }
+        } catch (Exception e) {
+            return new ReportResult().error("Error " + e.getMessage());
+        }
+        ReportIface report = (ReportIface) getReportInstance(dataQuery, language, user);
+        if (null == report) {
+            return new ReportResult().error("Report not found: " + className);
         }
         ReportResult result = report.getReportResult(dataQuery, language);
         return result;
     }
 
-    private Object getReportInstance(){
+    private Object getReportInstance() {
         return new DummyReport();
     }
 
-    private ReportIface getReportInstance(String className){
-        ReportIface report=null;
+    private ReportIface getReportInstance(DataQuery query, String language, User user) {
+        String className = query.getClassName();
         try {
-            report = (ReportIface)Class.forName(className).getDeclaredConstructor().newInstance();
+            boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
+                    user.tenant, user.path);
+            if (!isAvailable) {
+                return null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        ReportIface report = null;
+        try {
+            report = (ReportIface) Class.forName(className).getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                 | NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             // TODO Auto-generated catch block

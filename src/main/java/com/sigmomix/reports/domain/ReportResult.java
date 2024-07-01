@@ -13,7 +13,7 @@ public class ReportResult {
     public String description=null;
     public Long id=null;
     public Timestamp created=null;
-    public DataQuery query=null;
+    //public DataQuery query=null;
     public HashMap<String, DataQuery> queries;
     public String content=null;
     public String contentType=null;
@@ -26,7 +26,7 @@ public class ReportResult {
 
     public ReportResult(DataQuery query, String language) {
         this();
-        this.query=query;
+        this.setQuery("default", query);
     }
 
     public ReportResult error(String message) {
