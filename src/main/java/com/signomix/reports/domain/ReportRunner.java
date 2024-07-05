@@ -1,15 +1,15 @@
-package com.sigmomix.reports.domain;
+package com.signomix.reports.domain;
 
 import java.lang.reflect.InvocationTargetException;
 
 import org.jboss.logging.Logger;
 
-import com.sigmomix.reports.pre.DummyReport;
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.IotDatabaseException;
 import com.signomix.common.db.ReportDaoIface;
+import com.signomix.reports.pre.DummyReport;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
@@ -35,8 +35,7 @@ public class ReportRunner {
         reportDao.setDatasource(olapDs);
     }
 
-    public ReportResult generateReport(String query, Integer organization, Integer tenant, String path,
-            String language) {
+    public ReportResult generateReport(String query, Integer organization, Integer tenant, String path) {
         DataQuery dataQuery;
         try {
             dataQuery = DataQuery.parse(query);
@@ -47,11 +46,11 @@ public class ReportRunner {
         if (null == report) {
             return new ReportResult().error("Class not found: " + dataQuery.getClassName());
         }
-        ReportResult result = report.getReportResult(dataQuery, organization, tenant, path, language);
+        ReportResult result = report.getReportResult(dataQuery, organization, tenant, path);
         return result;
     }
 
-    public ReportResult generateReport(String query, String language, User user) {
+    public ReportResult generateReport(String query, User user) {
         DataQuery dataQuery;
         String className = null;
         try {
@@ -73,11 +72,35 @@ public class ReportRunner {
         } catch (Exception e) {
             return new ReportResult().error("Error " + e.getMessage());
         }
-        ReportIface report = (ReportIface) getReportInstance(dataQuery, language, user);
+        ReportIface report = (ReportIface) getReportInstance(dataQuery, user);
         if (null == report) {
             return new ReportResult().error("Report not found: " + className);
         }
-        ReportResult result = report.getReportResult(dataQuery, language);
+        ReportResult result = report.getReportResult(dataQuery);
+        return result;
+    }
+
+    public ReportResult generateReport(DataQuery dataQuery, User user) {
+
+        String className = null;
+        try {
+            className = dataQuery.getClassName();
+            if (className == null) {
+                return new ReportResult().error("Class not defined in query");
+            }
+            boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
+                    user.tenant, user.path);
+            if (!isAvailable) {
+                return new ReportResult().error("Access denied for " + className);
+            }
+        } catch (Exception e) {
+            return new ReportResult().error("Error " + e.getMessage());
+        }
+        ReportIface report = (ReportIface) getReportInstance(dataQuery, user);
+        if (null == report) {
+            return new ReportResult().error("Report not found: " + className);
+        }
+        ReportResult result = report.getReportResult(dataQuery);
         return result;
     }
 
@@ -85,7 +108,7 @@ public class ReportRunner {
         return new DummyReport();
     }
 
-    private ReportIface getReportInstance(DataQuery query, String language, User user) {
+    private ReportIface getReportInstance(DataQuery query, User user) {
         String className = query.getClassName();
         try {
             boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),

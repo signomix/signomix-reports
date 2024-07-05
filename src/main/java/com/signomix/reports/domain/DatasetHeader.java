@@ -1,4 +1,4 @@
-package com.sigmomix.reports.domain;
+package com.signomix.reports.domain;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package com.sigmomix.reports.domain;
+package com.signomix.reports.domain;
 
 import java.util.ArrayList;
 
@@ -10,5 +10,9 @@ import java.util.ArrayList;
 public class DatasetRow {
     public Long timestamp;
     public ArrayList<Double> values;
+
+    public DatasetRow() {
+        values = new ArrayList<>();
+    }
 
 }

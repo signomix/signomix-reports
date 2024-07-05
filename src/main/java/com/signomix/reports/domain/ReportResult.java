@@ -1,4 +1,4 @@
-package com.sigmomix.reports.domain;
+package com.signomix.reports.domain;
 
 import java.sql.Timestamp;
 import java.time.DayOfWeek;
@@ -24,7 +24,7 @@ public class ReportResult {
         queries = new HashMap<String, DataQuery>();
     }
 
-    public ReportResult(DataQuery query, String language) {
+    public ReportResult(DataQuery query) {
         this();
         this.setQuery("default", query);
     }

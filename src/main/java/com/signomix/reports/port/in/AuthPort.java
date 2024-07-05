@@ -1,10 +1,10 @@
-package com.sigmomix.reports.port.in;
+package com.signomix.reports.port.in;
 
 import org.jboss.logging.Logger;
 
-import com.sigmomix.reports.domain.AuthLogic;
 import com.signomix.common.Token;
 import com.signomix.common.User;
+import com.signomix.reports.domain.AuthLogic;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

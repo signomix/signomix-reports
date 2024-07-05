@@ -1,4 +1,4 @@
-package com.sigmomix.reports.domain;
+package com.signomix.reports.domain;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -6,6 +6,7 @@ import org.jboss.logging.Logger;
 import com.signomix.common.Token;
 import com.signomix.common.User;
 import com.signomix.common.db.AuthDaoIface;
+import com.signomix.common.db.IotDatabaseException;
 import com.signomix.common.db.UserDaoIface;
 import com.signomix.common.tsdb.AuthDao;
 import com.signomix.common.tsdb.UserDao;
@@ -53,6 +54,16 @@ public class AuthLogic {
     public String getUserId(String token) {
         LOG.info("getUserId: " + token);
         return authDao.getUserId(token, sessionTokenLifetime, permanentTokenLifetime);
+    }
+
+    public User getUserFromToken(String token) {
+        try {
+            return userDao.getUser(getUserId(token));
+        } catch (IotDatabaseException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public User getUser(String uid) {
