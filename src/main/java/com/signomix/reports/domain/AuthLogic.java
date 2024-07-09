@@ -41,10 +41,13 @@ public class AuthLogic {
     @ConfigProperty(name = "signomix.database.type")
     String databaseType;
 
+    @ConfigProperty(name = "questdb.client.config")
+    String questDbConfig;
+
     void onStart(@Observes StartupEvent ev) {
         if ("postgresql".equalsIgnoreCase(databaseType)) {
             authDao = new com.signomix.common.tsdb.AuthDao();
-            authDao.setDatasource(tsDs);
+            authDao.setDatasource(tsDs, questDbConfig);
             userDao = new com.signomix.common.tsdb.UserDao();
             userDao.setDatasource(tsDs);
         }
