@@ -6,6 +6,7 @@ import org.jboss.logging.Logger;
 
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
+import com.signomix.common.db.ReportResult;
 import com.signomix.reports.domain.AuthLogic;
 import com.signomix.reports.port.in.AuthPort;
 import com.signomix.reports.port.in.ReportPort;
@@ -41,7 +42,11 @@ public class ReportApi {
             @QueryParam("query") String query) {
         User user = authPort.getUser(token);
         if (user == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            ReportResult result = new ReportResult();
+            result.status = 401;
+            result.errorMessage = "Unauthorized";
+            return Response.ok().entity(result).build();
+            // return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         return Response.ok().entity(reportPort.getReportResult(query, user)).build();
     }
@@ -51,11 +56,15 @@ public class ReportApi {
     @Consumes("application/json")
     public Response getCompiledReport2(@HeaderParam("Authentication") String token,
             DataQuery query) {
-                logger.info("getCompiledReport2");
-        //User user = authPort.getUser(token);
+        logger.info("getCompiledReport2");
+        // User user = authPort.getUser(token);
         User user = authLogic.getUserFromToken(token);
         if (user == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            ReportResult result = new ReportResult();
+            result.status = 401;
+            result.errorMessage = "Unauthorized";
+            return Response.ok().entity(result).build();
+            // return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         return Response.ok().entity(reportPort.getReportResult(query, user)).build();
     }
@@ -68,22 +77,34 @@ public class ReportApi {
             @QueryParam("path") String path,
             @QueryParam("query") String query,
             @QueryParam("language") String language) {
+        User user = authLogic.getUserFromToken(token);
+        if (user == null) {
+            ReportResult result = new ReportResult();
+            result.status = 401;
+            result.errorMessage = "Unauthorized";
+            return Response.ok().entity(result).build();
+            // return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
         return Response.ok().entity(reportPort.getReportResult(query, organization, tenant, path, language)).build();
     }
-    
+
     @Path("/multi")
     @GET
     @Consumes("application/json")
     public Response getCompiledMultiReport(@HeaderParam("Authentication") String token,
             List<DataQuery> queryList) {
-                logger.info("getCompiledMultiReport");
+        logger.info("getCompiledMultiReport");
         User user = authPort.getUser(token);
         if (user == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            if (user == null) {
+                ReportResult result = new ReportResult();
+                result.status = 401;
+                result.errorMessage = "Unauthorized";
+                return Response.ok().entity(result).build();
+                // return Response.status(Response.Status.UNAUTHORIZED).build();
+            }
         }
         return Response.ok().entity(reportPort.getReportResult(queryList.get(0), user)).build();
     }
-
-
 
 }

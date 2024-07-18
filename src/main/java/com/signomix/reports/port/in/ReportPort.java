@@ -2,7 +2,7 @@ package com.signomix.reports.port.in;
 
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
-import com.signomix.reports.domain.ReportResult;
+import com.signomix.common.db.ReportResult;
 import com.signomix.reports.domain.ReportRunner;
 
 import jakarta.enterprise.context.ApplicationScoped;

@@ -7,8 +7,8 @@ import org.jboss.logging.Logger;
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
-import com.signomix.common.db.IotDatabaseException;
 import com.signomix.common.db.ReportDaoIface;
+import com.signomix.common.db.ReportResult;
 import com.signomix.reports.pre.DummyReport;
 
 import io.agroal.api.AgroalDataSource;
@@ -40,11 +40,11 @@ public class ReportRunner {
         try {
             dataQuery = DataQuery.parse(query);
         } catch (DataQueryException e) {
-            return new ReportResult().error(e.getMessage());
+            return new ReportResult().error(400,e.getMessage());
         }
         ReportIface report = (ReportIface) getReportInstance();
         if (null == report) {
-            return new ReportResult().error("Class not found: " + dataQuery.getClassName());
+            return new ReportResult().error(404,"Class not found: " + dataQuery.getClassName());
         }
         ReportResult result = report.getReportResult(dataQuery, organization, tenant, path);
         return result;
@@ -57,24 +57,24 @@ public class ReportRunner {
             dataQuery = DataQuery.parse(query);
         } catch (DataQueryException e) {
             e.printStackTrace();
-            return new ReportResult().error("DataQuery error: " + e.getMessage());
+            return new ReportResult().error(400,"DataQuery error: " + e.getMessage());
         }
         try {
             className = dataQuery.getClassName();
             if (className == null) {
-                return new ReportResult().error("Class not defined in query");
+                return new ReportResult().error(400,"Class not defined in query");
             }
             boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
                     user.tenant, user.path);
             if (!isAvailable) {
-                return new ReportResult().error("Access denied for " + className);
+                return new ReportResult().error(401,"Access denied for " + className);
             }
         } catch (Exception e) {
-            return new ReportResult().error("Error " + e.getMessage());
+            return new ReportResult().error(400,"Error " + e.getMessage());
         }
         ReportIface report = (ReportIface) getReportInstance(dataQuery, user);
         if (null == report) {
-            return new ReportResult().error("Report not found: " + className);
+            return new ReportResult().error(404,"Report not found: " + className);
         }
         ReportResult result = report.getReportResult(dataQuery);
         return result;
@@ -86,19 +86,19 @@ public class ReportRunner {
         try {
             className = dataQuery.getClassName();
             if (className == null) {
-                return new ReportResult().error("Class not defined in query");
+                return new ReportResult().error(400,"Class not defined in query");
             }
             boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
                     user.tenant, user.path);
             if (!isAvailable) {
-                return new ReportResult().error("Access denied for " + className);
+                return new ReportResult().error(401,"Access denied for " + className);
             }
         } catch (Exception e) {
-            return new ReportResult().error("Error " + e.getMessage());
+            return new ReportResult().error(400,"Error " + e.getMessage());
         }
         ReportIface report = (ReportIface) getReportInstance(dataQuery, user);
         if (null == report) {
-            return new ReportResult().error("Report not found: " + className);
+            return new ReportResult().error(404,"Report not found: " + className);
         }
         ReportResult result = report.getReportResult(dataQuery);
         return result;

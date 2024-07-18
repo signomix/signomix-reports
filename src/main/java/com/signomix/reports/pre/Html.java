@@ -1,8 +1,8 @@
 package com.signomix.reports.pre;
 
 import com.signomix.common.db.DataQuery;
+import com.signomix.common.db.ReportResult;
 import com.signomix.reports.domain.ReportIface;
-import com.signomix.reports.domain.ReportResult;
 
 public class Html implements ReportIface {
 

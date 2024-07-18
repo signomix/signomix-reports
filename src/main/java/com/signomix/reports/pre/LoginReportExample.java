@@ -9,7 +9,7 @@ import com.signomix.common.db.DatasetRow;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.domain.ReportIface;
 
-public class DummyReport implements ReportIface{
+public class LoginReportExample implements ReportIface{
 
     @Override
     public ReportResult getReportResult(DataQuery query, Integer organization, Integer tenant, String path) {
@@ -18,24 +18,24 @@ public class DummyReport implements ReportIface{
                 result.setQuery("default", query);
                 result.contentType = "application/json";
                 result.setId(-1L);
-                result.setTitle("Dummy report");
+                result.setTitle("Login report");
                 result.setDescription("This is a dummy report");
                 result.setTimestamp(new Timestamp(System.currentTimeMillis()));
                 result.setQuery(reportName, query);
 
                 DatasetHeader header = new DatasetHeader(reportName);
-                header.columns.add("temperature");
-                header.columns.add("humidity");
+                header.columns.add("login");
+                header.columns.add("result_code");
                 result.addDatasetHeader(header);
 
                 Dataset data = new Dataset(reportName);
                 data.eui = "123456";
-                data.size=1000L;
-                for (int i = 0; i < 10; i++) {
+                data.size=4L;
+                for (int i = 0; i < 4; i++) {
                     DatasetRow row = new DatasetRow();
                     row.timestamp = System.currentTimeMillis()+i*1000;
-                    row.values.add(20.0 + Math.random() * 10);
-                    row.values.add(40.0 + Math.random() * 20);
+                    row.values.add("user"+i);
+                    row.values.add("success");
                     data.data.add(row);
                 }
                 result.addDataset(data);
@@ -51,24 +51,24 @@ public class DummyReport implements ReportIface{
                 result.setQuery("default", query);
                 result.contentType = "application/json";
                 result.setId(-1L);
-                result.setTitle("Dummy report");
+                result.setTitle("Login report");
                 result.setDescription("This is a dummy report");
                 result.setTimestamp(new Timestamp(System.currentTimeMillis()));
                 result.setQuery(reportName, query);
 
                 DatasetHeader header = new DatasetHeader(reportName);
-                header.columns.add("temperature");
-                header.columns.add("humidity");
+                header.columns.add("login");
+                header.columns.add("result_code");
                 result.addDatasetHeader(header);
 
                 Dataset data = new Dataset(reportName);
-                data.eui = "123456";
-                data.size=1000L;
-                for (int i = 0; i < 10; i++) {
+                data.eui = "";
+                data.size=4L;
+                for (int i = 0; i < 4; i++) {
                     DatasetRow row = new DatasetRow();
                     row.timestamp = System.currentTimeMillis()+i*1000;
-                    row.values.add(20.0 + Math.random() * 10);
-                    row.values.add(40.0 + Math.random() * 20);
+                    row.values.add("user"+i);
+                    row.values.add("success");
                     data.data.add(row);
                 }
                 result.addDataset(data);

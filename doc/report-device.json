@@ -1,0 +1,138 @@
+{
+    "datasets": [
+        {
+            "size": 1000,
+            "data": [
+                {
+                    "timestamp": 1721252572735,
+                    "values": [
+                        26.3484803182423,
+                        57.098673317433686
+                    ]
+                },
+                {
+                    "timestamp": 1721252573735,
+                    "values": [
+                        24.92635709220106,
+                        57.437431613402936
+                    ]
+                },
+                {
+                    "timestamp": 1721252574735,
+                    "values": [
+                        22.8206285859378,
+                        54.84051777123927
+                    ]
+                },
+                {
+                    "timestamp": 1721252575735,
+                    "values": [
+                        24.368917201004365,
+                        47.70555569705513
+                    ]
+                },
+                {
+                    "timestamp": 1721252576735,
+                    "values": [
+                        22.048798517899282,
+                        42.22812896635316
+                    ]
+                },
+                {
+                    "timestamp": 1721252577735,
+                    "values": [
+                        25.2651898700322,
+                        46.79338796400407
+                    ]
+                },
+                {
+                    "timestamp": 1721252578735,
+                    "values": [
+                        22.06930593080235,
+                        43.50420966856045
+                    ]
+                },
+                {
+                    "timestamp": 1721252579735,
+                    "values": [
+                        28.771496854803495,
+                        55.975133271662905
+                    ]
+                },
+                {
+                    "timestamp": 1721252580735,
+                    "values": [
+                        22.138712795380428,
+                        45.062268535358044
+                    ]
+                },
+                {
+                    "timestamp": 1721252581735,
+                    "values": [
+                        29.709664424538644,
+                        53.782570188005934
+                    ]
+                }
+            ],
+            "eui": "123456",
+            "name": "dataset0"
+        }
+    ],
+    "headers": [
+        {
+            "columns": [
+                "temperature",
+                "humidity"
+            ],
+            "name": "dataset0"
+        }
+    ],
+    "title": "Dummy report",
+    "description": "This is a dummy report",
+    "id": -1,
+    "created": "2024-07-17T21:42:52.735+00:00",
+    "queries": {
+        "default": {
+            "limit": 1,
+            "average": 0,
+            "minimum": 0,
+            "maximum": 0,
+            "summary": 0,
+            "channelName": null,
+            "timeseries": false,
+            "project": null,
+            "newValue": null,
+            "group": null,
+            "state": null,
+            "fromTs": null,
+            "toTs": null,
+            "toTsExclusive": null,
+            "virtual": false,
+            "offset": 0,
+            "className": "com.signomix.reports.pre.DummyReport",
+            "channels": []
+        },
+        "dataset0": {
+            "limit": 1,
+            "average": 0,
+            "minimum": 0,
+            "maximum": 0,
+            "summary": 0,
+            "channelName": null,
+            "timeseries": false,
+            "project": null,
+            "newValue": null,
+            "group": null,
+            "state": null,
+            "fromTs": null,
+            "toTs": null,
+            "toTsExclusive": null,
+            "virtual": false,
+            "offset": 0,
+            "className": "com.signomix.reports.pre.DummyReport",
+            "channels": []
+        }
+    },
+    "content": null,
+    "contentType": "application/json"
+}

@@ -1,6 +1,7 @@
 package com.signomix.reports.domain;
 
 import com.signomix.common.db.DataQuery;
+import com.signomix.common.db.ReportResult;
 
 public interface ReportIface {
 

@@ -1,0 +1,82 @@
+[
+    [
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "temperature",
+            "value": 30.0,
+            "timestamp": 1720126429798,
+            "stringValue": null
+        },
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "humidity",
+            "value": 40.0,
+            "timestamp": 1720126429798,
+            "stringValue": null
+        }
+    ],
+    [
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "temperature",
+            "value": 10.0,
+            "timestamp": 1720173373016,
+            "stringValue": null
+        },
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "humidity",
+            "value": 12.0,
+            "timestamp": 1720173373016,
+            "stringValue": null
+        }
+    ],
+    [
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "temperature",
+            "value": 20.0,
+            "timestamp": 1720173626064,
+            "stringValue": null
+        },
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "humidity",
+            "value": 30.0,
+            "timestamp": 1720173626064,
+            "stringValue": null
+        }
+    ],
+    [
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "temperature",
+            "value": 5.0,
+            "timestamp": 1720173807239,
+            "stringValue": null
+        },
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "humidity",
+            "value": 20.0,
+            "timestamp": 1720173807239,
+            "stringValue": null
+        }
+    ],
+    [
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "temperature",
+            "value": 10.0,
+            "timestamp": 1721208846849,
+            "stringValue": null
+        },
+        {
+            "deviceEUI": "IOTEMULATOR",
+            "name": "humidity",
+            "value": 20.0,
+            "timestamp": 1721208846849,
+            "stringValue": null
+        }
+    ]
+]
