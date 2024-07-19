@@ -28,6 +28,14 @@ public class ReportRunner {
     @DataSource("olap")
     AgroalDataSource olapDs;
 
+    @Inject
+    @DataSource("oltp")
+    AgroalDataSource oltpDs;
+
+    @Inject
+    @DataSource("qdb")
+    AgroalDataSource logsDs;
+
     ReportDaoIface reportDao;
 
     void onStart(@Observes StartupEvent ev) {
@@ -35,7 +43,7 @@ public class ReportRunner {
         reportDao.setDatasource(olapDs);
     }
 
-    public ReportResult generateReport(String query, Integer organization, Integer tenant, String path) {
+    public ReportResult generateReport(String query, Integer organization, Integer tenant, String path, User user) {
         DataQuery dataQuery;
         try {
             dataQuery = DataQuery.parse(query);
@@ -46,7 +54,7 @@ public class ReportRunner {
         if (null == report) {
             return new ReportResult().error(404,"Class not found: " + dataQuery.getClassName());
         }
-        ReportResult result = report.getReportResult(dataQuery, organization, tenant, path);
+        ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery, organization, tenant, path, user);
         return result;
     }
 
@@ -76,7 +84,7 @@ public class ReportRunner {
         if (null == report) {
             return new ReportResult().error(404,"Report not found: " + className);
         }
-        ReportResult result = report.getReportResult(dataQuery);
+        ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery, user);
         return result;
     }
 
@@ -100,7 +108,7 @@ public class ReportRunner {
         if (null == report) {
             return new ReportResult().error(404,"Report not found: " + className);
         }
-        ReportResult result = report.getReportResult(dataQuery);
+        ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery, user);
         return result;
     }
 

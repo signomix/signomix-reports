@@ -14,8 +14,8 @@ public class ReportPort {
     @Inject
     ReportRunner reportRunner;
 
-    public ReportResult getReportResult(String query, Integer organization, Integer tenant, String path, String language) {
-        return reportRunner.generateReport(query, organization, tenant, path);
+    public ReportResult getReportResult(String query, Integer organization, Integer tenant, String path, String language, User user) {
+        return reportRunner.generateReport(query, organization, tenant, path, user);
     }
 
     public ReportResult getReportResult(String query, User user) {

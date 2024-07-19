@@ -85,7 +85,7 @@ public class ReportApi {
             return Response.ok().entity(result).build();
             // return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-        return Response.ok().entity(reportPort.getReportResult(query, organization, tenant, path, language)).build();
+        return Response.ok().entity(reportPort.getReportResult(query, organization, tenant, path, language, user)).build();
     }
 
     @Path("/multi")
