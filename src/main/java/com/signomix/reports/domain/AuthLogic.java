@@ -55,7 +55,7 @@ public class AuthLogic {
     }
 
     public String getUserId(String token) {
-        LOG.info("getUserId: " + token);
+        LOG.debug("getUserId: " + token);
         return authDao.getUserId(token, sessionTokenLifetime, permanentTokenLifetime);
     }
 

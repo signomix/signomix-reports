@@ -51,7 +51,7 @@ public class ReportApi {
         return Response.ok().entity(reportPort.getReportResult(query, user)).build();
     }
 
-    @Path("/single")
+    @Path("/query")
     @GET
     @Consumes("application/json")
     public Response getCompiledReport2(@HeaderParam("Authentication") String token,
@@ -69,7 +69,7 @@ public class ReportApi {
         return Response.ok().entity(reportPort.getReportResult(query, user)).build();
     }
 
-    @Path("/single")
+    @Path("/orgreport")
     @GET
     public Response getReport(@HeaderParam("Authentication") String token,
             @QueryParam("organization") Integer organization,

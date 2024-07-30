@@ -67,6 +67,7 @@ public class DeviceInfo extends Report implements ReportIface {
                 }else{
                     return new ReportResult().error(404, "Device not found");
                 }
+                rs.close();
             }
         } catch (SQLException e) {
             return new ReportResult().error(500, e.getMessage());
@@ -80,7 +81,9 @@ public class DeviceInfo extends Report implements ReportIface {
                 if (rs.next()) {
                     device.setLastSeen(rs.getTimestamp(1).getTime());
                 }
+                rs.close();
             }
+
         } catch (SQLException e) {
             return new ReportResult().error(500, e.getMessage());
         }

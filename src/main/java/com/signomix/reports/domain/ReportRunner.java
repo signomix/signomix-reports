@@ -118,7 +118,7 @@ public class ReportRunner {
 
     private ReportIface getReportInstance(DataQuery query, User user) {
         String className = query.getClassName();
-        try {
+/*         try {
             boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
                     user.tenant, user.path);
             if (!isAvailable) {
@@ -126,7 +126,7 @@ public class ReportRunner {
             }
         } catch (Exception e) {
             return null;
-        }
+        } */
         ReportIface report = null;
         try {
             report = (ReportIface) Class.forName(className).getDeclaredConstructor().newInstance();
