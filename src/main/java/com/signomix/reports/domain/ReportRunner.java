@@ -69,8 +69,10 @@ public class ReportRunner {
         }
         try {
             className = dataQuery.getClassName();
-            if (className == null) {
+            if(className == null) {
                 return new ReportResult().error(400,"Class not defined in query");
+            }else if(className.indexOf(".")<0) {
+                className = "com.signomix.reports.pre." + className;
             }
             boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
                     user.tenant, user.path);
@@ -93,8 +95,10 @@ public class ReportRunner {
         String className = null;
         try {
             className = dataQuery.getClassName();
-            if (className == null) {
+            if(className == null) {
                 return new ReportResult().error(400,"Class not defined in query");
+            }else if(className.indexOf(".")<0) {
+                className = "com.signomix.reports.pre." + className;
             }
             boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
                     user.tenant, user.path);
@@ -118,22 +122,17 @@ public class ReportRunner {
 
     private ReportIface getReportInstance(DataQuery query, User user) {
         String className = query.getClassName();
-/*         try {
-            boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
-                    user.tenant, user.path);
-            if (!isAvailable) {
-                return null;
-            }
-        } catch (Exception e) {
+        if(className == null) {
             return null;
-        } */
+        }else if(className.indexOf(".")<0) {
+            className = "com.signomix.reports.pre." + className;
+        }
         ReportIface report = null;
         try {
             report = (ReportIface) Class.forName(className).getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                 | NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            logger.warn("Error creating report instance", e);
         }
         return report;
     }

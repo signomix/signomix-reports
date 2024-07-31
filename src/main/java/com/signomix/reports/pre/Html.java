@@ -22,7 +22,7 @@ public class Html extends Report implements ReportIface {
             User user) {
         ReportResult result = new ReportResult(query);
         result.contentType = "text/html";
-        result.content = "<h1>Test</h1><p>Test</p>";
+        result.content = "<h1>Test</h1><p>This is example html report</p>";
         return result;
     }
 

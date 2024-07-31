@@ -8,8 +8,6 @@ import com.signomix.common.User;
 import com.signomix.common.db.AuthDaoIface;
 import com.signomix.common.db.IotDatabaseException;
 import com.signomix.common.db.UserDaoIface;
-import com.signomix.common.tsdb.AuthDao;
-import com.signomix.common.tsdb.UserDao;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
