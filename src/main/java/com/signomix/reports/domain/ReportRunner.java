@@ -8,6 +8,7 @@ import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.ReportDaoIface;
+import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.pre.DummyReport;
 

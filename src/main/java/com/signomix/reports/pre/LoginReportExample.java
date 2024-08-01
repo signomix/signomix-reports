@@ -7,9 +7,9 @@ import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.Dataset;
 import com.signomix.common.db.DatasetHeader;
 import com.signomix.common.db.DatasetRow;
+import com.signomix.common.db.Report;
+import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
-import com.signomix.reports.domain.Report;
-import com.signomix.reports.domain.ReportIface;
 
 import io.agroal.api.AgroalDataSource;
 
@@ -91,6 +91,34 @@ public class LoginReportExample extends Report implements ReportIface {
         result.addDataset(data);
 
         return result;
+    }
+
+    @Override
+    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, Integer organization, Integer tenant, String path, User user) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
+    }
+
+    @Override
+    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, User user) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
+    }
+
+    @Override
+    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, Integer organization, Integer tenant, String path, User user) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+    }
+
+    @Override
+    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, User user) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
     }
 
 }

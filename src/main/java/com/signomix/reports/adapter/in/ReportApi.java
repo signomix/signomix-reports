@@ -36,6 +36,8 @@ public class ReportApi {
     @Inject
     AuthLogic authLogic;
 
+    
+
     @Path("/single")
     @GET
     public Response getCompiledReport(@HeaderParam("Authentication") String token,

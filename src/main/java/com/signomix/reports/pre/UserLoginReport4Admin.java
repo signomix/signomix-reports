@@ -19,7 +19,7 @@ import com.signomix.common.db.ReportResult;
 
 import io.agroal.api.AgroalDataSource;
 
-public class UserLoginReport extends Report implements ReportIface {
+public class UserLoginReport4Admin extends Report implements ReportIface {
 
     private static final Logger logger = Logger.getLogger(UserLoginReport.class);
 
@@ -64,18 +64,23 @@ public class UserLoginReport extends Report implements ReportIface {
             AgroalDataSource logsDs,
             DataQuery query,
             User user) {
+
+        // Check if user is authorized
+        if (user.type != User.OWNER) {
+            return new ReportResult().error(403, "Not authorized");
+        }
         int defaultLimit = 10;
         String reportName = "dataset0";
         ReportResult result = new ReportResult();
         result.setQuery("default", query);
         result.contentType = "application/json";
         result.setId(-1L);
-        result.setTitle("User " + user.uid + " login history report");
+        result.setTitle("Account events report");
         result.setDescription("");
         result.setTimestamp(new Timestamp(System.currentTimeMillis()));
         result.setQuery(reportName, query);
 
-        String dbQuery = "SELECT * FROM account_events WHERE uid=? AND event_type=? AND error_code=0 ";   
+        String dbQuery = "SELECT * FROM account_events WHERE event_type IS NOT NULL";
         String dbOrder = " ORDER BY ts ";
         String dbLimit = "";
         String dbFromTS = "";
@@ -93,12 +98,10 @@ public class UserLoginReport extends Report implements ReportIface {
         }
 
         dbQuery += dbFromTS + dbToTS + dbOrder + dbLimit;
-        logger.debug("SQL query: " + dbQuery );
+        logger.debug("SQL query: " + dbQuery);
         try (Connection conn = oltpDs.getConnection();
                 PreparedStatement ps = conn.prepareStatement(dbQuery)) {
-            ps.setString(1, user.uid);
-            ps.setObject(2, "login", java.sql.Types.OTHER);
-            int paramNo = 3;
+            int paramNo = 1;
             if (query.getFromTs() != null) {
                 ps.setTimestamp(paramNo, query.getFromTs());
                 logger.debug("FromTS: " + query.getFromTs());
@@ -110,7 +113,7 @@ public class UserLoginReport extends Report implements ReportIface {
                 paramNo++;
             }
             if (query.getFromTs() == null && query.getToTs() == null) {
-                if(query.getLimit() > 0) {
+                if (query.getLimit() > 0) {
                     ps.setLong(paramNo, query.getLimit());
                 } else {
                     ps.setLong(paramNo, defaultLimit);
@@ -119,8 +122,11 @@ public class UserLoginReport extends Report implements ReportIface {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 DatasetHeader header = new DatasetHeader(reportName);
-                header.columns.add("adres IP");
-                header.columns.add("kod błedu");
+                header.columns.add("login");
+                header.columns.add("organization");
+                header.columns.add("event");
+                header.columns.add("IP address");
+                header.columns.add("result code");
                 result.addDatasetHeader(header);
 
                 Dataset data = new Dataset(reportName);
@@ -129,6 +135,9 @@ public class UserLoginReport extends Report implements ReportIface {
                 while (rs.next()) {
                     DatasetRow row = new DatasetRow();
                     row.timestamp = rs.getTimestamp("ts").getTime();
+                    row.values.add(rs.getString("uid"));
+                    row.values.add(rs.getString("organization"));
+                    row.values.add(rs.getString("event_type"));
                     row.values.add(rs.getString("client_ip"));
                     row.values.add(rs.getString("error_code"));
                     data.data.add(row);

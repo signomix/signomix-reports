@@ -10,10 +10,10 @@ import java.time.ZonedDateTime;
 
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
+import com.signomix.common.db.Report;
+import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
 import com.signomix.common.iot.Device;
-import com.signomix.reports.domain.Report;
-import com.signomix.reports.domain.ReportIface;
 
 import io.agroal.api.AgroalDataSource;
 
@@ -53,18 +53,18 @@ public class DeviceInfo extends Report implements ReportIface {
 
         Device device = new Device();
         String sql = "SELECT * FROM devices WHERE eui = ? AND ( userid = ? OR team LIKE ? OR administrators LIKE ?)";
-        try(Connection conn = oltpDs.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = oltpDs.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, query.getEui());
             ps.setString(2, user.uid);
-            ps.setString(3, "%,"+user.uid+",%");
-            ps.setString(4, "%,"+user.uid+",%");
-            try(ResultSet rs = ps.executeQuery()) {
+            ps.setString(3, "%," + user.uid + ",%");
+            ps.setString(4, "%," + user.uid + ",%");
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     device.setName(rs.getString("name"));
                     device.setType(rs.getString("type"));
                     device.setDescription(rs.getString("description"));
-                }else{
+                } else {
                     return new ReportResult().error(404, "Device not found");
                 }
                 rs.close();
@@ -73,11 +73,11 @@ public class DeviceInfo extends Report implements ReportIface {
             return new ReportResult().error(500, e.getMessage());
         }
 
-        sql="SELECT last(ts,ts)FROM devicestatus where eui=?";
-        try(Connection conn = olapDs.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+        sql = "SELECT last(ts,ts)FROM devicestatus where eui=?";
+        try (Connection conn = olapDs.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, query.getEui());
-            try(ResultSet rs = ps.executeQuery()) {
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     device.setLastSeen(rs.getTimestamp(1).getTime());
                 }
@@ -116,6 +116,34 @@ public class DeviceInfo extends Report implements ReportIface {
 
         result.content = content;
         return result;
+    }
+
+    @Override
+    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, Integer organization, Integer tenant, String path, User user) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
+    }
+
+    @Override
+    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, User user) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
+    }
+
+    @Override
+    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, Integer organization, Integer tenant, String path, User user) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+    }
+
+    @Override
+    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, User user) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
     }
 
 }
