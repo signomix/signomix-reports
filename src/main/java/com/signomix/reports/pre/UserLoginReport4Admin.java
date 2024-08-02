@@ -136,7 +136,7 @@ public class UserLoginReport4Admin extends Report implements ReportIface {
                     DatasetRow row = new DatasetRow();
                     row.timestamp = rs.getTimestamp("ts").getTime();
                     row.values.add(rs.getString("uid"));
-                    row.values.add(rs.getString("organization"));
+                    row.values.add(rs.getString("organization_id"));
                     row.values.add(rs.getString("event_type"));
                     row.values.add(rs.getString("client_ip"));
                     row.values.add(rs.getString("error_code"));
