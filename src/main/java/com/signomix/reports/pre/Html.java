@@ -1,5 +1,7 @@
 package com.signomix.reports.pre;
 
+import java.util.HashMap;
+
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.Report;

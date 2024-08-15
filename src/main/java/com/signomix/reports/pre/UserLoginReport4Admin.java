@@ -21,7 +21,7 @@ import io.agroal.api.AgroalDataSource;
 
 public class UserLoginReport4Admin extends Report implements ReportIface {
 
-    private static final Logger logger = Logger.getLogger(UserLoginReport.class);
+    private static final Logger logger = Logger.getLogger(DqlReport.class);
 
     @Override
     public ReportResult getReportResult(
@@ -53,6 +53,7 @@ public class UserLoginReport4Admin extends Report implements ReportIface {
         data.size = 0L;
         result.addDataset(data);
 
+        result = sortResult(result, reportName);
         return result;
 
     }
@@ -81,7 +82,7 @@ public class UserLoginReport4Admin extends Report implements ReportIface {
         result.setQuery(reportName, query);
 
         String dbQuery = "SELECT * FROM account_events WHERE event_type IS NOT NULL";
-        String dbOrder = " ORDER BY ts ";
+        String dbOrder = " ORDER BY ts DESC";
         String dbLimit = "";
         String dbFromTS = "";
         String dbToTS = "";
@@ -94,7 +95,6 @@ public class UserLoginReport4Admin extends Report implements ReportIface {
         }
         if (query.getFromTs() == null && query.getToTs() == null) {
             dbLimit = " LIMIT ?";
-            dbOrder += " DESC ";
         }
 
         dbQuery += dbFromTS + dbToTS + dbOrder + dbLimit;

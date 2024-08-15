@@ -1,6 +1,7 @@
 package com.signomix.reports.pre;
 
 import java.sql.Timestamp;
+import java.util.HashMap;
 
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
@@ -122,5 +123,6 @@ public class DummyReport extends Report implements ReportIface {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
     }
+
 
 }

@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.HashMap;
 
 import org.jboss.logging.Logger;
 
@@ -21,7 +22,7 @@ import io.agroal.api.AgroalDataSource;
 
 public class UserLoginReport extends Report implements ReportIface {
 
-    private static final Logger logger = Logger.getLogger(UserLoginReport.class);
+    private static final Logger logger = Logger.getLogger(DqlReport.class);
 
     @Override
     public ReportResult getReportResult(
@@ -76,7 +77,7 @@ public class UserLoginReport extends Report implements ReportIface {
         result.setQuery(reportName, query);
 
         String dbQuery = "SELECT * FROM account_events WHERE uid=? AND event_type=? AND error_code=0 ";   
-        String dbOrder = " ORDER BY ts ";
+        String dbOrder = " ORDER BY ts DESC";
         String dbLimit = "";
         String dbFromTS = "";
         String dbToTS = "";
@@ -89,7 +90,6 @@ public class UserLoginReport extends Report implements ReportIface {
         }
         if (query.getFromTs() == null && query.getToTs() == null) {
             dbLimit = " LIMIT ?";
-            dbOrder += " DESC ";
         }
 
         dbQuery += dbFromTS + dbToTS + dbOrder + dbLimit;
@@ -141,7 +141,7 @@ public class UserLoginReport extends Report implements ReportIface {
             result.error(e.getMessage());
             return result;
         }
-
+        result=sortResult(result, reportName);
         return result;
     }
 
@@ -172,5 +172,6 @@ public class UserLoginReport extends Report implements ReportIface {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
     }
+
 
 }

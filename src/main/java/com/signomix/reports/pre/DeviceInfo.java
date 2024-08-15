@@ -4,9 +4,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
 
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
@@ -79,7 +81,12 @@ public class DeviceInfo extends Report implements ReportIface {
             ps.setString(1, query.getEui());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    device.setLastSeen(rs.getTimestamp(1).getTime());
+                    Timestamp ts = rs.getTimestamp(1);
+                    if (ts != null) {
+                        device.setLastSeen(ts.getTime());
+                    }else{
+                        device.setLastSeen(0);
+                    }
                 }
                 rs.close();
             }

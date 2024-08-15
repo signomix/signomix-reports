@@ -1,6 +1,7 @@
 package com.signomix.reports.pre;
 
 import java.sql.Timestamp;
+import java.util.HashMap;
 
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;

@@ -1,7 +1,9 @@
 package com.signomix.reports.domain;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.signomix.common.User;
@@ -15,6 +17,7 @@ import com.signomix.reports.pre.DummyReport;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.runtime.StartupEvent;
+import io.questdb.std.Hash;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -36,6 +39,9 @@ public class ReportRunner {
     @Inject
     @DataSource("qdb")
     AgroalDataSource logsDs;
+
+    @ConfigProperty(name = "signomix.report.limit")
+    Integer reportResultLimit;
 
     ReportDaoIface reportDao;
 
@@ -131,6 +137,9 @@ public class ReportRunner {
         ReportIface report = null;
         try {
             report = (ReportIface) Class.forName(className).getDeclaredConstructor().newInstance();
+            HashMap<String, Object> options = new HashMap<>();
+            options.put("result.limit", reportResultLimit);
+            report.setOptions(options);
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                 | NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             logger.warn("Error creating report instance", e);
