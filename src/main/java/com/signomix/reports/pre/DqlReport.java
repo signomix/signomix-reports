@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.jboss.logging.Logger;
 
@@ -69,10 +71,10 @@ public class DqlReport extends Report implements ReportIface {
             DataQuery query,
             User user) {
         int defaultLimit = 500;
-        try{
-            defaultLimit=(Integer)options.get("result.limit");
-        }catch(Exception e){
-            logger.error("Error getting default limit: "+e.getMessage());
+        try {
+            defaultLimit = (Integer) options.get("result.limit");
+        } catch (Exception e) {
+            logger.error("Error getting default limit: " + e.getMessage());
         }
         String reportName = DATASET_NAME;
         ReportResult result = new ReportResult();
@@ -96,6 +98,12 @@ public class DqlReport extends Report implements ReportIface {
 
     private ReportResult getDeviceData(ReportResult result, AgroalDataSource olapDs, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit) {
+
+        String devEui = getDevice(oltpDs, query.getEui(), user.uid);
+        if (devEui == null) {
+            result.error("No device found: " + query.getEui());
+            return result;
+        }
         Dataset dataset = new Dataset(DATASET_NAME);
         dataset.eui = query.getEui();
         dataset.size = 0L;
@@ -121,6 +129,9 @@ public class DqlReport extends Report implements ReportIface {
                             channelColumnNames.put(channelNames[i], "d" + (i + 1));
                         }
                     }
+                } else {
+                    result.error("No channel definition found for device " + query.getEui());
+                    return result;
                 }
             }
         } catch (SQLException ex) {
@@ -139,30 +150,10 @@ public class DqlReport extends Report implements ReportIface {
         result.addDatasetHeader(header);
 
         // get data
-        boolean useDefaultLimit = true;
-        sql = "SELECT * FROM analyticdata WHERE eui = ? ";
-        if (query.getFromTs() != null) {
-            sql += " AND tstamp >= ? ";
-            if (query.getToTs() != null) {
-                sql += " AND tstamp <= ? ";
-            }
-        } else {
-            // limit
-            useDefaultLimit = false;
-        }
-        if (query.getProject() != null) {
-            sql += " AND project = ? ";
-        }
-
-        if (useDefaultLimit) {
-            sql += " ORDER BY tstamp " + query.getSortOrder() + " ";
-        } else {
-            sql += " ORDER BY tstamp DESC ";
-        }
-
-        sql += " LIMIT ? ";
-
+        boolean useDefaultLimit = query.getFromTs() != null;
+        sql = getSqlQuery(query, useDefaultLimit, channelColumnNames);
         logger.debug("SQL query: " + sql);
+
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, query.getEui());
@@ -182,14 +173,31 @@ public class DqlReport extends Report implements ReportIface {
                 stmt.setInt(idx++, query.getLimit());
             }
             try (ResultSet rs = stmt.executeQuery()) {
+                double value;
+                boolean noNulls;
                 while (rs.next()) {
                     DatasetRow row = new DatasetRow();
                     row.timestamp = rs.getTimestamp("tstamp").getTime();
+                    noNulls = true;
                     for (int i = 0; i < requestedChannelNames.length; i++) {
-                        row.values.add(rs.getDouble(channelColumnNames.get(requestedChannelNames[i])));
+                        value = rs.getDouble(channelColumnNames.get(requestedChannelNames[i]));
+                        if (rs.wasNull()) {
+                            row.values.add(null);
+                            noNulls = false;
+                        } else {
+                            row.values.add(value);
+                        }
                     }
+
+                    /*
+                     * // not needed as the query already filters out nulls
+                     * if(query.isNotNull() && !noNulls){
+                     *     continue;
+                     * }
+                     */
                     dataset.data.add(row);
                 }
+                dataset.size = (long) dataset.data.size();
                 result.addDataset(dataset);
             }
         } catch (SQLException ex) {
@@ -204,11 +212,107 @@ public class DqlReport extends Report implements ReportIface {
         return result;
     }
 
+    private String getSqlQuery(DataQuery query, boolean useDefaultLimit, HashMap<String, String> channelColumnNames) {
+
+        String columns = "tstamp,";
+        for (String channel : channelColumnNames.keySet()) {
+            columns += channelColumnNames.get(channel) + ",";
+        }
+        columns = columns.substring(0, columns.length() - 1);
+
+        String notNullCondition;
+
+        if (query.isNotNull()) {
+            notNullCondition = " AND NOT (";
+            for (String channel : channelColumnNames.keySet()) {
+                notNullCondition += channelColumnNames.get(channel) + " IS NULL OR ";
+            }
+            notNullCondition = notNullCondition.substring(0, notNullCondition.length() - 4);
+            notNullCondition += ") ";
+        } else {
+            notNullCondition = "";
+        }
+        String sql = "SELECT " + columns + " FROM analyticdata WHERE eui = ? ";
+        if (query.getFromTs() != null) {
+            sql += " AND tstamp >= ? ";
+            if (query.getToTs() != null) {
+                sql += " AND tstamp <= ? ";
+            }
+        }
+        if (query.getProject() != null) {
+            sql += " AND project = ? ";
+        }
+
+        sql += notNullCondition;
+
+        if (useDefaultLimit) {
+            sql += " ORDER BY tstamp " + query.getSortOrder() + " ";
+        } else {
+            sql += " ORDER BY tstamp DESC ";
+        }
+
+        sql += " LIMIT ? ";
+
+        return sql;
+    }
+
     private ReportResult getGroupData(ReportResult result, AgroalDataSource olapDs, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit) {
-        Dataset data = new Dataset(DATASET_NAME);
         result.error("Group data not implemented");
+        List<String> devices = getGroupDevices(query.getGroup(), oltpDs, logsDs, user);
+        if (devices.isEmpty()) {
+            result.error("No devices found in group " + query.getGroup());
+            return result;
+        }
+        ReportResult tmpResult;
+        for (String device : devices) {
+            tmpResult = new ReportResult();
+            query.setEui(device);
+            tmpResult = getDeviceData(result, olapDs, oltpDs, logsDs, query, user, defaultLimit);
+            // TODO: merge datasets
+        }
         return result;
+    }
+
+    private String getDevice(AgroalDataSource oltpDs, String eui, String userId) {
+        String devEui = null;
+        String sql = "SELECT eui FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        try (Connection conn = oltpDs.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, eui);
+            stmt.setString(2, userId);
+            stmt.setString(3, "%," + userId + ",%");
+            stmt.setString(4, "%," + userId + ",%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    devEui = rs.getString(1);
+                }
+            }
+        } catch (SQLException ex) {
+            logger.error("Error getting device: " + ex.getMessage());
+        }
+        return devEui;
+    }
+
+    private List<String> getGroupDevices(String groupEui, AgroalDataSource oltpDs,
+            AgroalDataSource logsDs, User user) {
+        List<String> devices = new ArrayList<>();
+        String sql = "SELECT eui FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        try (Connection conn = oltpDs.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%," + groupEui + ",%");
+            stmt.setString(2, user.uid);
+            stmt.setString(3, "%," + user.uid + ",%");
+            stmt.setString(4, "%," + user.uid + ",%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    devices.add(rs.getString(1));
+                }
+            }
+        } catch (SQLException ex) {
+            logger.error("Error getting group devices: " + ex.getMessage());
+        }
+        return devices;
     }
 
     @Override
