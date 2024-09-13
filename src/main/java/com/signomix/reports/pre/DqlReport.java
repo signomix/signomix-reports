@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import org.jboss.logging.Logger;
@@ -112,9 +113,18 @@ public class DqlReport extends Report implements ReportIface {
         HashMap<String, String> channelColumnNames = new HashMap<>();
         String[] channelNames = {};
         String[] requestedChannelNames = {};
+        HashSet<String> channelNamesSet = new HashSet<>();
         if (query.getChannelName() == null) {
             result.error("No channel name specified");
             return result;
+        }
+        if (query.getChannelName().equals("*")) {
+            requestedChannelNames = channelNames;
+        } else {
+            requestedChannelNames = query.getChannelName().split(",");
+        }
+        for (String channel : requestedChannelNames) {
+            channelNamesSet.add(channel);
         }
         String sql = "SELECT channels FROM devicechannels WHERE eui = ?";
         try (Connection conn = oltpDs.getConnection();
@@ -126,7 +136,9 @@ public class DqlReport extends Report implements ReportIface {
                     if (channels != null) {
                         channelNames = channels.split(",");
                         for (int i = 0; i < channelNames.length; i++) {
-                            channelColumnNames.put(channelNames[i], "d" + (i + 1));
+                            if (channelNamesSet.contains(channelNames[i])) {
+                                channelColumnNames.put(channelNames[i], "d" + (i + 1));
+                            }
                         }
                     }
                 } else {
@@ -138,11 +150,7 @@ public class DqlReport extends Report implements ReportIface {
             logger.error("Error getting channel names: " + ex.getMessage());
             result.error("Error getting channel names: " + ex.getMessage());
         }
-        if (query.getChannelName().equals("*")) {
-            requestedChannelNames = channelNames;
-        } else {
-            requestedChannelNames = query.getChannelName().split(",");
-        }
+
         DatasetHeader header = new DatasetHeader(DATASET_NAME);
         for (int i = 0; i < requestedChannelNames.length; i++) {
             header.columns.add(requestedChannelNames[i]);
@@ -152,7 +160,7 @@ public class DqlReport extends Report implements ReportIface {
         // get data
         boolean useDefaultLimit = query.getFromTs() != null;
         sql = getSqlQuery(query, useDefaultLimit, channelColumnNames);
-        logger.debug("SQL query: " + sql);
+        logger.info("SQL query: " + sql);
 
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -180,21 +188,27 @@ public class DqlReport extends Report implements ReportIface {
                     row.timestamp = rs.getTimestamp("tstamp").getTime();
                     noNulls = true;
                     for (int i = 0; i < requestedChannelNames.length; i++) {
-                        value = rs.getDouble(channelColumnNames.get(requestedChannelNames[i]));
-                        if (rs.wasNull()) {
+                        try {
+                            value = rs.getDouble(channelColumnNames.get(requestedChannelNames[i]));
+                            if (rs.wasNull()) {
+                                row.values.add(null);
+                                noNulls = false;
+                            } else {
+                                row.values.add(value);
+                            }
+                        } catch (Exception ex) {
+                            logger.warn("Error getting value: " + ex.getMessage());
+                            // probably NaN value
                             row.values.add(null);
                             noNulls = false;
-                        } else {
-                            row.values.add(value);
                         }
                     }
 
-                    /*
-                     * // not needed as the query already filters out nulls
-                     * if(query.isNotNull() && !noNulls){
-                     *     continue;
-                     * }
-                     */
+                    // the query already filters out nulls
+                    // but in case of NaN values, the row is skipped
+                    if (query.isNotNull() && !noNulls) {
+                        continue;
+                    }
                     dataset.data.add(row);
                 }
                 dataset.size = (long) dataset.data.size();
