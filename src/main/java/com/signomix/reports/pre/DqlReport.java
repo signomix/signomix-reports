@@ -14,6 +14,7 @@ import org.jboss.logging.Logger;
 
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
+import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.Dataset;
 import com.signomix.common.db.DatasetHeader;
 import com.signomix.common.db.DatasetRow;
@@ -77,35 +78,50 @@ public class DqlReport extends Report implements ReportIface {
         } catch (Exception e) {
             logger.error("Error getting default limit: " + e.getMessage());
         }
-        String reportName = DATASET_NAME;
-        ReportResult result = new ReportResult();
-        result.setQuery("default", query);
-        result.contentType = "application/json";
-        result.setId(-1L);
-        result.setTitle("User " + user.uid + " login history report");
-        result.setDescription("");
-        result.setTimestamp(new Timestamp(System.currentTimeMillis()));
-        result.setQuery(reportName, query);
+        /*
+         * String reportName = DATASET_NAME;
+         * ReportResult result = new ReportResult();
+         * result.setQuery("default", query);
+         * result.contentType = "application/json";
+         * result.setId(-1L);
+         * result.setTitle("");
+         * result.setDescription("");
+         * result.setTimestamp(new Timestamp(System.currentTimeMillis()));
+         * result.setQuery(reportName, query);
+         */
 
+        ReportResult result;
         if (query.getEui() != null) {
-            result = getDeviceData(result, olapDs, oltpDs, logsDs, query, user, defaultLimit);
+            result = getDeviceData(olapDs, oltpDs, logsDs, query, user, defaultLimit);
         } else if (query.getGroup() != null) {
-            result = getGroupData(result, olapDs, oltpDs, logsDs, query, user, defaultLimit);
+            result = getGroupData(olapDs, oltpDs, logsDs, query, user, defaultLimit);
         } else {
+            result = new ReportResult();
+            result.contentType = "application/json";
             result.error("No data source specified");
         }
         return result;
     }
 
-    private ReportResult getDeviceData(ReportResult result, AgroalDataSource olapDs, AgroalDataSource oltpDs,
+    private ReportResult getDeviceData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit) {
+
+        String reportName = DATASET_NAME;
+        ReportResult result = new ReportResult();
+        result.setQuery("default", query);
+        result.contentType = "application/json";
+        result.setId(-1L);
+        result.setTitle("");
+        result.setDescription("");
+        result.setTimestamp(new Timestamp(System.currentTimeMillis()));
+        // result.setQuery(reportName, query);
 
         String devEui = getDevice(oltpDs, query.getEui(), user.uid);
         if (devEui == null) {
             result.error("No device found: " + query.getEui());
             return result;
         }
-        Dataset dataset = new Dataset(DATASET_NAME);
+        Dataset dataset = new Dataset(query.getEui());
         dataset.eui = query.getEui();
         dataset.size = 0L;
 
@@ -151,7 +167,7 @@ public class DqlReport extends Report implements ReportIface {
             result.error("Error getting channel names: " + ex.getMessage());
         }
 
-        DatasetHeader header = new DatasetHeader(DATASET_NAME);
+        DatasetHeader header = new DatasetHeader(query.getEui());
         for (int i = 0; i < requestedChannelNames.length; i++) {
             header.columns.add(requestedChannelNames[i]);
         }
@@ -270,21 +286,42 @@ public class DqlReport extends Report implements ReportIface {
         return sql;
     }
 
-    private ReportResult getGroupData(ReportResult result, AgroalDataSource olapDs, AgroalDataSource oltpDs,
+    private ReportResult getGroupData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit) {
-        result.error("Group data not implemented");
+        ReportResult result = new ReportResult();
+        result.setQuery("default", query);
+        result.contentType = "application/json";
+        result.setId(-1L);
+        result.setTitle("");
+        result.setDescription("");
+        result.setTimestamp(new Timestamp(System.currentTimeMillis()));
         List<String> devices = getGroupDevices(query.getGroup(), oltpDs, logsDs, user);
         if (devices.isEmpty()) {
             result.error("No devices found in group " + query.getGroup());
             return result;
+        } else {
+            devices.forEach(device -> logger.info("Group device: " + device));
         }
         ReportResult tmpResult;
-        for (String device : devices) {
+        Dataset dataset;
+        DataQuery tmpQuery;
+        for (int i = 0; i < devices.size(); i++) {
+            try {
+                tmpQuery = DataQuery.parse(query.getSource());
+            } catch (DataQueryException e) {
+                logger.warn("Error parsing query: " + e.getMessage());
+                result.error("Error parsing query: " + e.getMessage());
+                return result;
+            }
             tmpResult = new ReportResult();
-            query.setEui(device);
-            tmpResult = getDeviceData(result, olapDs, oltpDs, logsDs, query, user, defaultLimit);
-            // TODO: merge datasets
+            tmpQuery.setEui(devices.get(i));
+            tmpQuery.setGroup(null);
+            tmpResult = getDeviceData(olapDs, oltpDs, logsDs, tmpQuery, user, defaultLimit);
+                result.headers.add(tmpResult.headers.get(0));
+            dataset = tmpResult.datasets.get(0);
+            result.datasets.add(dataset);
         }
+        logger.info("result dataset size: " + result.datasets.size());
         return result;
     }
 
