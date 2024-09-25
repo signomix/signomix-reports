@@ -17,6 +17,7 @@ import com.signomix.reports.pre.DummyReport;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.runtime.StartupEvent;
+import io.questdb.cairo.pool.ReaderPool.R;
 import io.questdb.std.Hash;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -51,7 +52,12 @@ public class ReportRunner {
     }
 
     public ReportResult generateReport(String query, Integer organization, Integer tenant, String path, User user) {
-        DataQuery dataQuery;
+        ReportResult result = new ReportResult();
+        result.status = 501;
+        result.errorMessage = "Not implemented";
+        return result;
+        
+        /* DataQuery dataQuery;
         try {
             dataQuery = DataQuery.parse(query);
         } catch (DataQueryException e) {
@@ -62,18 +68,20 @@ public class ReportRunner {
             return new ReportResult().error(404,"Class not found: " + dataQuery.getClassName());
         }
         ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery, organization, tenant, path, user);
-        return result;
+        return result; */
     }
 
     public ReportResult generateReport(String query, User user) {
         DataQuery dataQuery;
-        String className = null;
         try {
             dataQuery = DataQuery.parse(query);
         } catch (DataQueryException e) {
             e.printStackTrace();
             return new ReportResult().error(400,"DataQuery error: " + e.getMessage());
         }
+        return generateReport(dataQuery, user);
+        /* 
+        String className = null;
         try {
             className = dataQuery.getClassName();
             if(className == null) {
@@ -94,7 +102,7 @@ public class ReportRunner {
             return new ReportResult().error(404,"Report not found: " + className);
         }
         ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery, user);
-        return result;
+        return result; */
     }
 
     public ReportResult generateReport(DataQuery dataQuery, User user) {
