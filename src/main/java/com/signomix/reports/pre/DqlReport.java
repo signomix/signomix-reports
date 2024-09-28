@@ -1,17 +1,5 @@
 package com.signomix.reports.pre;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-
-import org.jboss.logging.Logger;
-
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
@@ -21,8 +9,17 @@ import com.signomix.common.db.DatasetRow;
 import com.signomix.common.db.Report;
 import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
-
 import io.agroal.api.AgroalDataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import org.jboss.logging.Logger;
 
 public class DqlReport extends Report implements ReportIface {
 
@@ -319,7 +316,12 @@ public class DqlReport extends Report implements ReportIface {
             tmpResult = getDeviceData(olapDs, oltpDs, logsDs, tmpQuery, user, defaultLimit);
                 result.headers.add(tmpResult.headers.get(0));
             dataset = tmpResult.datasets.get(0);
-            result.datasets.add(dataset);
+            if(dataset != null && dataset.size > 0){
+                result.datasets.add(dataset);
+            }else{
+                logger.warn("No data for device: " + devices.get(i));
+            }
+            
         }
         logger.info("result dataset size: " + result.datasets.size());
         return result;
