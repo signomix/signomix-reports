@@ -287,6 +287,36 @@ public class DqlReport extends Report implements ReportIface {
         return result;
     }
 
+    /**
+     * Creates a SQL query to get data from the database.
+     * The query is created based on the given DataQuery object.
+     * Supported query parameters:
+     * - eui
+     * - group
+     * - channel (from channelColumnNames parameter, not DQL channel keyword )
+     * - last
+     * - from
+     * - to
+     * - project
+     * - notnull
+     * - ascending
+     * - descending
+     * Not supported:
+     * - sback
+     * - minimum
+     * - maximum
+     * - average
+     * - sum
+     * - new
+     * - state
+     * - tag
+     * - virtual (won't be supported by this type of report)
+     * - sort
+     * @param query
+     * @param useDefaultLimit
+     * @param channelColumnNames
+     * @return
+     */
     private String getSqlQuery(DataQuery query, boolean useDefaultLimit, HashMap<String, String> channelColumnNames) {
 
         String columnName;
