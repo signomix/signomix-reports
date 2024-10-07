@@ -1,14 +1,5 @@
 package com.signomix.reports.pre;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-
-import org.jboss.logging.Logger;
-
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.Dataset;
@@ -17,8 +8,16 @@ import com.signomix.common.db.DatasetRow;
 import com.signomix.common.db.Report;
 import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
-
 import io.agroal.api.AgroalDataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import org.jboss.logging.Logger;
 
 public class IntervalReport extends Report implements ReportIface {
 
@@ -90,6 +89,7 @@ public class IntervalReport extends Report implements ReportIface {
     private ReportResult getDeviceData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit, DeviceDto device) {
 
+        String channelName = query.getChannels().get(0); // only first channel is supported
         ReportResult result = new ReportResult();
         result.setQuery("default", query);
         result.contentType = "application/json";
@@ -102,38 +102,36 @@ public class IntervalReport extends Report implements ReportIface {
         dataset.eui = query.getEui();
         dataset.size = 0L;
         DatasetHeader header = new DatasetHeader(query.getEui());
-        header.columns.add("delta");
+        // header.columns.add("delta");
+        header.columns.add(channelName);
         result.addDatasetHeader(header);
 
         // get data
-        String sql1 = getSqlQuery(168);
-        String sql0 = getSqlQuery(169);
-        ArrayList<DatasetRow> rows1 = new ArrayList<>();
-        ArrayList<DatasetRow> rows0 = new ArrayList<>(); // 1 row more to calculate delta
-        logger.info("SQL1 query: " + sql1);
-
-        try (Connection conn = olapDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql1)) {
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    DatasetRow row = new DatasetRow();
-                    row.timestamp = rs.getTimestamp("ts").getTime();
-                    row.values.add(rs.getDouble("d1"));
-                    rows1.add(row);
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Error getting data: " + ex.getMessage());
-            result.error("Error getting data: " + ex.getMessage());
+        /*
+         * String sql1 = getSqlQuery(168);
+         * String sql0 = getSqlQuery(169);
+         */
+        HashMap<String, String> channelColumnNames;
+        try {
+            channelColumnNames = getChannelColumnNames(query, oltpDs);
+        } catch (Exception e) {
+            logger.error("Error getting channel names: " + e.getMessage());
+            result.error("Error getting channel names: " + e.getMessage());
+            return result;
         }
+        String sql = getSqlQuery(query, channelColumnNames);
+        // ArrayList<DatasetRow> rows1 = new ArrayList<>();
+        ArrayList<DatasetRow> rows0 = new ArrayList<>(); // 1 row more to calculate delta
+        logger.info("SQL query: " + sql);
+        String channelColumnName = channelColumnNames.get(channelName);
         try (Connection conn = olapDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql0)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             try (ResultSet rs = stmt.executeQuery()) {
                 double value;
                 while (rs.next()) {
                     DatasetRow row = new DatasetRow();
                     row.timestamp = rs.getTimestamp("ts").getTime();
-                    row.values.add(rs.getDouble("d1"));
+                    row.values.add(rs.getDouble(channelColumnName));
                     rows0.add(row);
                 }
             }
@@ -141,18 +139,33 @@ public class IntervalReport extends Report implements ReportIface {
             logger.error("Error getting data: " + ex.getMessage());
             result.error("Error getting data: " + ex.getMessage());
         }
-        // calculate delta
-        double delta = 0;
-        for (int i = 0; i < rows1.size(); i++) {
-            if (i < rows0.size() - 1) {
-                delta = (double) rows1.get(i).values.get(0) - (double) rows0.get(i + 1).values.get(0);
-            } else {
-                delta = 0;
+        if (!query.isIntervalDeltas()) {
+            for (int i = 0; i < rows0.size(); i++) {
+                DatasetRow row = new DatasetRow();
+                row.timestamp = rows0.get(i).timestamp;
+                row.values.add((double) rows0.get(i).values.get(0));
+                dataset.data.add(row);
             }
-            DatasetRow row = new DatasetRow();
-            row.timestamp = rows1.get(i).timestamp;
-            row.values.add(delta);
-            dataset.data.add(row);
+        } else {
+            // calculate delta
+            double delta = 0;
+            for (int i = 0; i < rows0.size()-1; i++) {
+                if (i < rows0.size() - 1) {
+                    delta = (double) rows0.get(i).values.get(0) - (double) rows0.get(i + 1).values.get(0);
+                } else {
+                    delta = 0;
+                }
+                DatasetRow row = new DatasetRow();
+                // TODO: implement query.isIntervalTimestampAtEnd() logic
+                if (query.isIntervalTimestampAtEnd()) {
+                    //
+                } else {
+                    //
+                }
+                row.timestamp = rows0.get(i).timestamp;
+                row.values.add(delta);
+                dataset.data.add(row);
+            }
         }
         dataset.size = (long) dataset.data.size();
         result.addDataset(dataset);
@@ -196,6 +209,106 @@ public class IntervalReport extends Report implements ReportIface {
                 "  last(d1, tstamp) as d1 " + //
                 "FROM analyticdata " + //
                 "WHERE eui='0018B240000068D4' AND tstamp > now () - INTERVAL '" + hours + " hours' " + //
+                "GROUP BY eui, ts " + //
+                "ORDER BY ts DESC;";
+
+        return sql;
+    }
+
+    private HashMap<String, String> getChannelColumnNames(DataQuery query, AgroalDataSource oltpDs) throws Exception {
+        HashMap<String, String> channelColumnNames = new HashMap<>();
+        String[] channelNames = {};
+        String[] requestedChannelNames = {};
+        HashSet<String> channelNamesSet = new HashSet<>();
+        if (query.getChannelName() == null) {
+            throw new Exception("No channel name specified");
+        }
+        if (query.getChannelName().equals("*")) {
+            requestedChannelNames = channelNames;
+        } else {
+            requestedChannelNames = query.getChannelName().split(",");
+        }
+        for (String channel : requestedChannelNames) {
+            channelNamesSet.add(channel);
+        }
+        HashSet<String> deviceChannelNamesSet = new HashSet<>();
+        String sql = "SELECT channels FROM devicechannels WHERE eui = ?";
+        try (Connection conn = oltpDs.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, query.getEui());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String channels = rs.getString(1);
+                    if (channels != null) {
+                        channelNames = channels.split(","); // channels names declared in the device
+
+                        for (String channel : channelNames) {
+                            deviceChannelNamesSet.add(channel);
+                        }
+                        for (int i = 0; i < channelNames.length; i++) {
+                            if (channelNamesSet.contains(channelNames[i])) {
+                                channelColumnNames.put(channelNames[i], "d" + (i + 1));
+                            }
+                        }
+                    }
+                    // device coordinates are added to the dataset if not already present
+                    // (latitude, longitude, altitude)
+                    // those channels columns won't be named as d1, d2, d3, etc. but as latitude,
+                    // longitude, altitude
+                    if (channelNamesSet.contains("latitude")) {
+                        if (!deviceChannelNamesSet.contains("latitude")) {
+                            channelColumnNames.put("latitude", "latitude");
+                        }
+                    }
+                    if (channelNamesSet.contains("longitude")) {
+                        if (!deviceChannelNamesSet.contains("longitude")) {
+                            channelColumnNames.put("longitude", "longitude");
+                        }
+                    }
+                    if (channelNamesSet.contains("altitude")) {
+                        if (!deviceChannelNamesSet.contains("altitude")) {
+                            channelColumnNames.put("altitude", "altitude");
+                        }
+                    }
+                } else {
+                    throw new Exception("No channel definition found for device " + query.getEui());
+                }
+            }
+        } catch (SQLException ex) {
+            logger.error("Error getting channel names: " + ex.getMessage());
+            throw new Exception("Error getting channel names: " + ex.getMessage());
+        }
+        return channelColumnNames;
+    }
+
+    private String getSqlQuery(DataQuery query, HashMap<String, String> channelColumnNames) {
+        // TODO: implement query.getChannels() logic
+        String interval;
+        if (query.isInterval()) {
+            interval = query.getInterval();
+        } else {
+            interval = "1 hour";
+        }
+        String eui = query.getEui();
+        String[] channelNames = query.getChannelName().split(",");
+        String channelColumnName = channelColumnNames.get(channelNames[0]); // only first channel is supported
+        String period;
+        int numberOfSamples = query.getLimit();
+        if (query.isIntervalDeltas()) {
+            numberOfSamples++;
+        }
+        if (query.getFromTs() != null && query.getToTs() != null) {
+            // deltas are not supported in this case
+            period = "AND tstamp > '" + query.getFromTs() + "' AND tstamp < '" + query.getToTs() + "' ";
+        } else {
+            period = "AND tstamp > now () - INTERVAL '" + numberOfSamples + " " + query.getIntervalName() + "' ";
+        }
+        String sql = "SELECT time_bucket('" + interval + "', tstamp) AS ts," + //
+                "  last(" + channelColumnName + ", tstamp) as " + channelColumnName + " " + //
+                "FROM analyticdata " + //
+                "WHERE eui='" + eui + "' " + //
+                period + //
+                // "AND tstamp > now () - INTERVAL '" + hours + " hours' " + //
                 "GROUP BY eui, ts " + //
                 "ORDER BY ts DESC;";
 
