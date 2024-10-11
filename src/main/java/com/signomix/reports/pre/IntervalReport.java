@@ -306,7 +306,7 @@ public class IntervalReport extends Report implements ReportIface {
         String sql = "SELECT time_bucket('" + interval + "', tstamp) AS ts," + //
                 "  last(" + channelColumnName + ", tstamp) as " + channelColumnName + " " + //
                 "FROM analyticdata " + //
-                "WHERE eui='" + eui + "' " + //
+                "WHERE eui='" + eui + "' AND "+channelColumnName+" IS NOT NULL " + //
                 period + //
                 // "AND tstamp > now () - INTERVAL '" + hours + " hours' " + //
                 "GROUP BY eui, ts " + //
