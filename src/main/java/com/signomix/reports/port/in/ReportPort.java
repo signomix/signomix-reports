@@ -4,7 +4,6 @@ import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.domain.ReportRunner;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -24,6 +23,10 @@ public class ReportPort {
 
     public ReportResult getReportResult(DataQuery query, User user) {
         return reportRunner.generateReport(query, user);
+    }
+
+    public String getReportResultFormatted(DataQuery query, User user) {
+        return reportRunner.generateFormatedReport(query, user);
     }
 
 }

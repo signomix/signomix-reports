@@ -90,6 +90,12 @@ public class DqlReport extends Report implements ReportIface {
         ReportResult result;
         if (query.getEui() != null) {
             DeviceDto device = getDevice(oltpDs, query.getEui(), user.uid);
+            if (device == null) {
+                result = new ReportResult();
+                result.contentType = "application/json";
+                result.error(404,"No device found: " + query.getEui());
+                return result;
+            }
             result = getDeviceData(olapDs, oltpDs, logsDs, query, user, defaultLimit, device);
         } else if (query.getGroup() != null) {
             result = getGroupData(olapDs, oltpDs, logsDs, query, user, defaultLimit);
@@ -388,6 +394,10 @@ public class DqlReport extends Report implements ReportIface {
         Dataset dataset;
         DataQuery tmpQuery;
         for (int i = 0; i < devices.size(); i++) {
+            if(devices.get(i) == null){
+                logger.debug("Skipping null device");
+                continue;
+            }
             try {
                 tmpQuery = DataQuery.parse(query.getSource());
             } catch (DataQueryException e) {
@@ -488,8 +498,9 @@ public class DqlReport extends Report implements ReportIface {
     @Override
     public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
             DataQuery query, User user) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+                ReportResult result = getReportResult(olapDs, oltpDs, logsDs, query, user);
+        return super.getAsCsv(result, 0, "\r\n", 
+        ",", true);
     }
 
 }

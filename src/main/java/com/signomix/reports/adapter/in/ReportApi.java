@@ -1,16 +1,12 @@
 package com.signomix.reports.adapter.in;
 
-import java.util.List;
-
-import org.jboss.logging.Logger;
-
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
+import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.domain.AuthLogic;
 import com.signomix.reports.port.in.AuthPort;
 import com.signomix.reports.port.in.ReportPort;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -18,7 +14,10 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 @Path("/api/reports")
@@ -36,8 +35,6 @@ public class ReportApi {
     @Inject
     AuthLogic authLogic;
 
-    
-
     @Path("/single")
     @GET
     public Response getCompiledReport(@HeaderParam("Authentication") String token,
@@ -50,14 +47,31 @@ public class ReportApi {
             return Response.ok().entity(result).build();
             // return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-        return Response.ok().entity(reportPort.getReportResult(query, user)).build();
+        DataQuery dataQuery;
+        try {
+            dataQuery = DataQuery.parse(query);
+        } catch (DataQueryException e) {
+            logger.warn(e.getMessage());
+            ReportResult result = new ReportResult();
+            result.status = 400;
+            result.errorMessage = e.getMessage();
+            return Response.ok().entity(result).build();
+        }
+        switch (dataQuery.getFormat()) {
+            case "csv":
+                return Response.ok().entity(reportPort.getReportResultFormatted(dataQuery, user)).build();
+            case "html":
+                return Response.ok().entity(reportPort.getReportResultFormatted(dataQuery, user)).build();
+            default:
+                return Response.ok().entity(reportPort.getReportResult(dataQuery, user)).build();
+        }
     }
 
     @Path("/query")
     @GET
     @Consumes("application/json")
     public Response getCompiledReport2(@HeaderParam("Authentication") String token,
-            DataQuery query) {
+            DataQuery dataQuery) {
         logger.info("getCompiledReport2");
         // User user = authPort.getUser(token);
         User user = authLogic.getUserFromToken(token);
@@ -68,7 +82,14 @@ public class ReportApi {
             return Response.ok().entity(result).build();
             // return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-        return Response.ok().entity(reportPort.getReportResult(query, user)).build();
+        switch (dataQuery.getFormat()) {
+            case "csv":
+                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user),"text/csv").build();
+            case "html":
+                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user),MediaType.TEXT_HTML).build();
+            default:
+                return Response.ok().entity(reportPort.getReportResult(dataQuery, user)).build();
+        }
     }
 
     @Path("/orgreport")
@@ -87,7 +108,8 @@ public class ReportApi {
             return Response.ok().entity(result).build();
             // return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-        return Response.ok().entity(reportPort.getReportResult(query, organization, tenant, path, language, user)).build();
+        return Response.ok().entity(reportPort.getReportResult(query, organization, tenant, path, language, user))
+                .build();
     }
 
     @Path("/multi")

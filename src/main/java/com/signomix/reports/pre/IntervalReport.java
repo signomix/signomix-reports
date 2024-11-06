@@ -77,6 +77,12 @@ public class IntervalReport extends Report implements ReportIface {
         ReportResult result;
         if (query.getEui() != null) {
             DeviceDto device = getDevice(oltpDs, query.getEui(), user.uid);
+            if(device == null){
+                result = new ReportResult();
+                result.contentType = "application/json";
+                result.error(404, "Device not found");
+                return result;
+            }
             result = getDeviceData(olapDs, oltpDs, logsDs, query, user, defaultLimit, device);
         } else {
             result = new ReportResult();
@@ -364,8 +370,9 @@ public class IntervalReport extends Report implements ReportIface {
     @Override
     public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
             DataQuery query, User user) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+                ReportResult result = getReportResult(olapDs, oltpDs, logsDs, query, user);
+        return super.getAsCsv(result, 0, "\r\n", 
+        ",", true);
     }
 
 }
