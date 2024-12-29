@@ -1,15 +1,5 @@
 package com.signomix.reports.pre;
 
-import com.signomix.common.User;
-import com.signomix.common.db.DataQuery;
-import com.signomix.common.db.DataQueryException;
-import com.signomix.common.db.Dataset;
-import com.signomix.common.db.DatasetHeader;
-import com.signomix.common.db.DatasetRow;
-import com.signomix.common.db.Report;
-import com.signomix.common.db.ReportIface;
-import com.signomix.common.db.ReportResult;
-import io.agroal.api.AgroalDataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,7 +9,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+
 import org.jboss.logging.Logger;
+
+import com.signomix.common.User;
+import com.signomix.common.db.DataQuery;
+import com.signomix.common.db.DataQueryException;
+import com.signomix.common.db.Dataset;
+import com.signomix.common.db.DatasetHeader;
+import com.signomix.common.db.DatasetRow;
+import com.signomix.common.db.Report;
+import com.signomix.common.db.ReportIface;
+import com.signomix.common.db.ReportResult;
+
+import io.agroal.api.AgroalDataSource;
 
 public class DqlReport extends Report implements ReportIface {
 
