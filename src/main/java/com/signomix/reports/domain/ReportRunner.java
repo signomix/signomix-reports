@@ -1,5 +1,11 @@
 package com.signomix.reports.domain;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
@@ -7,16 +13,13 @@ import com.signomix.common.db.ReportDaoIface;
 import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.pre.DummyReport;
+
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ReportRunner {
@@ -126,7 +129,7 @@ public class ReportRunner {
         return result;
     }
 
-    public String generateFormatedReport(DataQuery dataQuery, User user) {
+    public String generateFormatedReport(DataQuery dataQuery, User user, Boolean withHeader) {
 
         String className = null;
         try {
@@ -149,7 +152,7 @@ public class ReportRunner {
             return "Error 400: Report not found: " + className;
         }
         if(dataQuery.getFormat().equals("html")) {
-            return report.getReportHtml(olapDs,oltpDs,logsDs,dataQuery, user);
+            return report.getReportHtml(olapDs,oltpDs,logsDs,dataQuery, user, withHeader);
         }else if(dataQuery.getFormat().equals("csv")) {
             return report.getReportCsv(oltpDs, olapDs, logsDs, dataQuery, user);
         }else {

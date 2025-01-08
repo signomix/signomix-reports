@@ -1,5 +1,9 @@
 package com.signomix.reports.adapter.in;
 
+import java.util.List;
+
+import org.jboss.logging.Logger;
+
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
@@ -7,6 +11,7 @@ import com.signomix.common.db.ReportResult;
 import com.signomix.reports.domain.AuthLogic;
 import com.signomix.reports.port.in.AuthPort;
 import com.signomix.reports.port.in.ReportPort;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -16,8 +21,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.util.List;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 @Path("/api/reports")
@@ -38,7 +41,7 @@ public class ReportApi {
     @Path("/single")
     @GET
     public Response getCompiledReport(@HeaderParam("Authentication") String token,
-            @QueryParam("query") String query) {
+            @QueryParam("query") String query, @QueryParam("header") Boolean header) {
         User user = authPort.getUser(token);
         if (user == null) {
             ReportResult result = new ReportResult();
@@ -59,9 +62,9 @@ public class ReportApi {
         }
         switch (dataQuery.getFormat()) {
             case "csv":
-                return Response.ok().entity(reportPort.getReportResultFormatted(dataQuery, user)).build();
+                return Response.ok().entity(reportPort.getReportResultFormatted(dataQuery, user, header)).build();
             case "html":
-                return Response.ok().entity(reportPort.getReportResultFormatted(dataQuery, user)).build();
+                return Response.ok().entity(reportPort.getReportResultFormatted(dataQuery, user, header)).build();
             default:
                 return Response.ok().entity(reportPort.getReportResult(dataQuery, user)).build();
         }
@@ -84,9 +87,9 @@ public class ReportApi {
         }
         switch (dataQuery.getFormat()) {
             case "csv":
-                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user),"text/csv").build();
+                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user,false),"text/csv").build();
             case "html":
-                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user),MediaType.TEXT_HTML).build();
+                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user,false),MediaType.TEXT_HTML).build();
             default:
                 return Response.ok().entity(reportPort.getReportResult(dataQuery, user)).build();
         }

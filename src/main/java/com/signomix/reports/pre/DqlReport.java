@@ -479,16 +479,15 @@ public class DqlReport extends Report implements ReportIface {
 
     @Override
     public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, Integer organization, Integer tenant, String path, User user) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
+            DataQuery query, Integer organization, Integer tenant, String path, User user, Boolean withHeader) {
+        return super.getAsHtml(getReportResult(olapDs, oltpDs, logsDs, query, organization, tenant, path,
+        user), 0 , withHeader);
     }
 
     @Override
     public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, User user) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
+            DataQuery query, User user, Boolean withHeader) {
+        return super.getAsHtml(getReportResult(olapDs, oltpDs, logsDs, query, user), 0, withHeader);
     }
 
     @Override

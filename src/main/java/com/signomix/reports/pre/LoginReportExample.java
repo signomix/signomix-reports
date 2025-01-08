@@ -96,14 +96,14 @@ public class LoginReportExample extends Report implements ReportIface {
 
     @Override
     public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, Integer organization, Integer tenant, String path, User user) {
+            DataQuery query, Integer organization, Integer tenant, String path, User user, Boolean withHeader) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
     }
 
     @Override
     public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, User user) {
+            DataQuery query, User user, Boolean withHeader) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
     }
