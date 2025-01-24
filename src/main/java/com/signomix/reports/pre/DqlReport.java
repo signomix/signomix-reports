@@ -28,8 +28,8 @@ public class DqlReport extends Report implements ReportIface {
 
     private static final Logger logger = Logger.getLogger(DqlReport.class);
 
-    private int defaultLimit = 500;
     private static final String DATASET_NAME = "dataset0";
+    private static final String QUERY_NAME = "default";
 
     @Override
     public ReportResult getReportResult(
@@ -43,7 +43,7 @@ public class DqlReport extends Report implements ReportIface {
             User user) {
         String reportName = DATASET_NAME;
         ReportResult result = new ReportResult();
-        result.setQuery("default", query);
+        result.setQuery(QUERY_NAME, query);
         result.contentType = "application/json";
         result.setId(-1L);
         result.setTitle("User login history report");
@@ -96,7 +96,7 @@ public class DqlReport extends Report implements ReportIface {
             if (device == null) {
                 result = new ReportResult();
                 result.contentType = "application/json";
-                result.error(404,"No device found: " + query.getEui());
+                result.error(404, "No device found: " + query.getEui());
                 return result;
             }
             result = getDeviceData(olapDs, oltpDs, logsDs, query, user, defaultLimit, device);
@@ -123,12 +123,15 @@ public class DqlReport extends Report implements ReportIface {
         result.setTimestamp(new Timestamp(System.currentTimeMillis()));
         // result.setQuery(reportName, query);
 
-/*         String devEui = getDevice(oltpDs, query.getEui(), user.uid);
-        if (devEui == null) {
-            result.error("No device found: " + query.getEui());
-            return result;
-        } */
+        /*
+         * String devEui = getDevice(oltpDs, query.getEui(), user.uid);
+         * if (devEui == null) {
+         * result.error("No device found: " + query.getEui());
+         * return result;
+         * }
+         */
         Dataset dataset = new Dataset(query.getEui());
+        dataset.name = reportName;
         dataset.eui = query.getEui();
         dataset.size = 0L;
 
@@ -205,10 +208,8 @@ public class DqlReport extends Report implements ReportIface {
         result.addDatasetHeader(header);
 
         // get data
-        boolean useDefaultLimit = query.getFromTs() != null;
-        sql = getSqlQuery(query, useDefaultLimit, channelColumnNames);
+        sql = getSqlQuery(query, channelColumnNames);
         logger.info("SQL query: " + sql);
-
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, query.getEui());
@@ -222,11 +223,8 @@ public class DqlReport extends Report implements ReportIface {
             if (query.getProject() != null) {
                 stmt.setString(idx++, query.getProject());
             }
-            if (useDefaultLimit) {
-                stmt.setInt(idx++, defaultLimit);
-            } else {
-                stmt.setInt(idx++, query.getLimit());
-            }
+            stmt.setInt(idx++, query.getLimit());
+            
             try (ResultSet rs = stmt.executeQuery()) {
                 double value;
                 boolean noNulls;
@@ -250,7 +248,7 @@ public class DqlReport extends Report implements ReportIface {
                                     row.values.add(value);
                                 }
                             } else {
-                                //TODO: get device configuration parameters
+                                // TODO: get device configuration parameters
                                 switch (columnName) {
                                     case "latitude":
                                         row.values.add(device.latitude);
@@ -290,8 +288,8 @@ public class DqlReport extends Report implements ReportIface {
         }
         // when last X values are requested (unable to get result sorted by database),
         // sort the result if ascending order is requested (descending order is default)
-        if (!useDefaultLimit && query.getSortOrder().equals("ASC")) {
-            result = sortResult(result, DATASET_NAME);
+        if (query.isSortingForced()) {
+            result = sortResult(result, DATASET_NAME, QUERY_NAME, true);
         }
         return result;
     }
@@ -321,12 +319,12 @@ public class DqlReport extends Report implements ReportIface {
      * - tag
      * - virtual (won't be supported by this type of report)
      * - sort
+     * 
      * @param query
-     * @param useDefaultLimit
      * @param channelColumnNames
      * @return
      */
-    private String getSqlQuery(DataQuery query, boolean useDefaultLimit, HashMap<String, String> channelColumnNames) {
+    private String getSqlQuery(DataQuery query, /*boolean useDefaultLimit,*/ HashMap<String, String> channelColumnNames) {
 
         String columnName;
         String columns = "tstamp,";
@@ -366,10 +364,10 @@ public class DqlReport extends Report implements ReportIface {
 
         sql += notNullCondition;
 
-        if (useDefaultLimit) {
-            sql += " ORDER BY tstamp " + query.getSortOrder() + " ";
-        } else {
+        if (query.isSortingForced()) {
             sql += " ORDER BY tstamp DESC ";
+        } else {
+            sql += " ORDER BY tstamp " + query.getSortOrder() + " ";
         }
 
         sql += " LIMIT ? ";
@@ -397,7 +395,7 @@ public class DqlReport extends Report implements ReportIface {
         Dataset dataset;
         DataQuery tmpQuery;
         for (int i = 0; i < devices.size(); i++) {
-            if(devices.get(i) == null){
+            if (devices.get(i) == null) {
                 logger.debug("Skipping null device");
                 continue;
             }
@@ -481,7 +479,7 @@ public class DqlReport extends Report implements ReportIface {
     public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
             DataQuery query, Integer organization, Integer tenant, String path, User user, Boolean withHeader) {
         return super.getAsHtml(getReportResult(olapDs, oltpDs, logsDs, query, organization, tenant, path,
-        user), 0 , withHeader);
+                user), 0, withHeader);
     }
 
     @Override
@@ -500,9 +498,9 @@ public class DqlReport extends Report implements ReportIface {
     @Override
     public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
             DataQuery query, User user) {
-                ReportResult result = getReportResult(olapDs, oltpDs, logsDs, query, user);
-        return super.getAsCsv(result, 0, "\r\n", 
-        ",", true);
+        ReportResult result = getReportResult(olapDs, oltpDs, logsDs, query, user);
+        return super.getAsCsv(result, 0, "\r\n",
+                ",", true);
     }
 
 }

@@ -141,7 +141,7 @@ public class UserLoginReport extends Report implements ReportIface {
             result.error(e.getMessage());
             return result;
         }
-        result=sortResult(result, reportName);
+        result=sortResult(result, reportName, "default", false);
         return result;
     }
 

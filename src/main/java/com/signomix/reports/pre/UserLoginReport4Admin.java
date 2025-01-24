@@ -53,7 +53,7 @@ public class UserLoginReport4Admin extends Report implements ReportIface {
         data.size = 0L;
         result.addDataset(data);
 
-        result = sortResult(result, reportName);
+        result = sortResult(result, reportName, "default", false);
         return result;
 
     }
