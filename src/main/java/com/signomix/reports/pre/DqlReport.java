@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
@@ -389,7 +390,11 @@ public class DqlReport extends Report implements ReportIface {
             result.error("No devices found in group " + query.getGroup());
             return result;
         } else {
-            devices.forEach(device -> logger.info("Group device: " + device));
+            devices.forEach(device -> {
+                result.configs.put(device.eui,device.configuration);
+                logger.info("Group device: " + device);
+            });
+            
         }
         ReportResult tmpResult;
         Dataset dataset;
@@ -451,7 +456,7 @@ public class DqlReport extends Report implements ReportIface {
     private List<DeviceDto> getGroupDevices(String groupEui, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, User user) {
         List<DeviceDto> devices = new ArrayList<>();
-        String sql = "SELECT eui,name,latitude,longitude,altitude FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        String sql = "SELECT eui,name,latitude,longitude,altitude,configuration FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
         try (Connection conn = oltpDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, "%," + groupEui + ",%");
@@ -466,6 +471,12 @@ public class DqlReport extends Report implements ReportIface {
                     device.latitude = rs.getDouble("latitude");
                     device.longitude = rs.getDouble("longitude");
                     device.altitude = rs.getDouble("altitude");
+                    device.configuration = deserializeConfiguration(rs.getString("configuration"));
+                    device.configuration.put("eui", device.eui);
+                    device.configuration.put("name", device.name);
+                    device.configuration.put("latitude", String.valueOf(device.latitude));
+                    device.configuration.put("longitude", String.valueOf(device.longitude));
+                    device.configuration.put("altitude", String.valueOf(device.altitude));
                     devices.add(device);
                 }
             }
@@ -473,6 +484,21 @@ public class DqlReport extends Report implements ReportIface {
             logger.error("Error getting group devices: " + ex.getMessage());
         }
         return devices;
+    }
+
+    /**
+     * Deserializes device configuration as map of String key-value pairs from JSON string.
+     */
+    @SuppressWarnings("unchecked")
+    private HashMap<String, String> deserializeConfiguration(String configuration) {
+        HashMap<String, String> config = new HashMap<>();
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            config = mapper.readValue(configuration, HashMap.class);
+        } catch (Exception e) {
+            logger.error("Error deserializing device configuration: " + e.getMessage());
+        }
+        return config;
     }
 
     @Override
