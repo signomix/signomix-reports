@@ -490,8 +490,8 @@ public class DqlReport extends Report implements ReportIface {
      * Deserializes device configuration as map of String key-value pairs from JSON string.
      */
     @SuppressWarnings("unchecked")
-    private HashMap<String, String> deserializeConfiguration(String configuration) {
-        HashMap<String, String> config = new HashMap<>();
+    private HashMap<String, Object> deserializeConfiguration(String configuration) {
+        HashMap<String, Object> config = new HashMap<>();
         ObjectMapper mapper = new ObjectMapper();
         try {
             config = mapper.readValue(configuration, HashMap.class);
