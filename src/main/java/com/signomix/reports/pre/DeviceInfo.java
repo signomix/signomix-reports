@@ -153,4 +153,16 @@ public class DeviceInfo extends Report implements ReportIface {
         throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
     }
 
+    @Override
+    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, User user, String format) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+    }
+
+    @Override
+    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
+        // TODO: Implement this method
+        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+    }
+
 }
