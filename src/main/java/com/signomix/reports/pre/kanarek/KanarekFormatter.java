@@ -40,11 +40,11 @@ public class KanarekFormatter {
     //private Map args;
 
     /**
-     * Translates response result to JSON representation
+     * Translates response result
      *
-     * @param prettyPrint pretty print JSON or not
-     * @param result      response result
-     * @return response as JSON String
+     * @param data        response data
+     * 
+     * @return response as JSON string
      */
     public String format(ReportResult data) {
         // logger.info("formatting Kanarek response");

@@ -13,9 +13,9 @@ public class KanarekReport extends DqlReport {
     public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
             DataQuery query, User user, String format) {
 
-        if (format == null || !format.equals("kanarek")) {
-            return "";
-        }
+        //if (format == null || !format.equals("kanarek")) {
+        //    return "";
+        //}
 
         ReportResult result = super.getReportResult(olapDs, oltpDs, logsDs, query, user);
         KanarekFormatter formatter = new KanarekFormatter();

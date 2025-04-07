@@ -209,7 +209,7 @@ public class DqlReport extends Report implements ReportIface {
         result.addDatasetHeader(header);
 
         // get data
-        sql = getSqlQuery(query, channelColumnNames);
+        sql = getSqlQuery(query, channelColumnNames, user);
         logger.info("SQL query: " + sql);
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -325,7 +325,7 @@ public class DqlReport extends Report implements ReportIface {
      * @param channelColumnNames
      * @return
      */
-    private String getSqlQuery(DataQuery query, /*boolean useDefaultLimit,*/ HashMap<String, String> channelColumnNames) {
+    private String getSqlQuery(DataQuery query, HashMap<String, String> channelColumnNames, User user) {
 
         String columnName;
         String columns = "tstamp,";
@@ -359,6 +359,8 @@ public class DqlReport extends Report implements ReportIface {
                 sql += " AND tstamp <= ? ";
             }
         }
+        sql += getTimestampCondition(user);
+
         if (query.getProject() != null) {
             sql += " AND project = ? ";
         }

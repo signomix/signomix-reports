@@ -92,7 +92,7 @@ public class UserLoginReport extends Report implements ReportIface {
             dbLimit = " LIMIT ?";
         }
 
-        dbQuery += dbFromTS + dbToTS + dbOrder + dbLimit;
+        dbQuery += dbFromTS + dbToTS + getTimestampCondition(user) + dbOrder + dbLimit;
         logger.debug("SQL query: " + dbQuery );
         try (Connection conn = oltpDs.getConnection();
                 PreparedStatement ps = conn.prepareStatement(dbQuery)) {

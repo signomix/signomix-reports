@@ -104,7 +104,7 @@ public class DqlTvReport extends Report implements ReportIface {
 
         // get data
 
-        String sql = getSqlQuery(query, requestedChannelNames[0]);
+        String sql = getSqlQuery(query, requestedChannelNames[0], user);
         logger.info("SQL query: " + sql);
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -172,7 +172,7 @@ public class DqlTvReport extends Report implements ReportIface {
      * @param channelColumnNames
      * @return
      */
-    private String getSqlQuery(DataQuery query, String columnName) {
+    private String getSqlQuery(DataQuery query, String columnName, User user) {
 
         String sql = "SELECT tstamp, textvalues->'" + query.getChannelName()
                 + "' as textvalue FROM analyticdata WHERE eui = ? ";
@@ -182,6 +182,8 @@ public class DqlTvReport extends Report implements ReportIface {
                 sql += " AND tstamp <= ? ";
             }
         }
+        sql += getTimestampCondition(user);
+
         if (query.getProject() != null) {
             sql += " AND project = ? ";
         }

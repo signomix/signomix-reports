@@ -151,12 +151,14 @@ public class ReportRunner {
         if (null == report) {
             return "Error 400: Report not found: " + className;
         }
-        if(dataQuery.getFormat().equals("html")) {
+        String format = dataQuery.getFormat();
+        if(format.equals("html")) {
             return report.getReportHtml(olapDs,oltpDs,logsDs,dataQuery, user, withHeader);
-        }else if(dataQuery.getFormat().equals("csv")) {
+        }else if(format.equals("csv")) {
             return report.getReportCsv(oltpDs, olapDs, logsDs, dataQuery, user);
         }else {
-            return "Error 400: Format not supported: " + dataQuery.getFormat();
+            return report.getReportFormat(oltpDs, olapDs, logsDs, dataQuery, user, format);
+            //return "Error 400: Format not supported: " + dataQuery.getFormat();
         }
     }
 

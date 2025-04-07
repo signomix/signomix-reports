@@ -49,7 +49,8 @@ public class KanarekApi {
             // return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         String query = "report com.signomix.reports.pre.kanarek.KanarekReport group " + groupEui 
-        + "channel temperature,humidity,latitude,longitude,pm25,pm10 limit 1 notnull";
+        + " channel pm2_5,pm10,pressure,temperature,humidity,latitude,longitude,pm2_5avg,pm10avg limit 1 notnull";
+
         DataQuery dataQuery;
         try {
             dataQuery = DataQuery.parse(query);
