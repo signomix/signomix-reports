@@ -8,5 +8,6 @@ public class DeviceDto {
     public Double latitude;
     public Double longitude;
     public Double altitude;
+    public String channels;
     public HashMap<String,Object> configuration;
 }

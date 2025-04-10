@@ -146,7 +146,7 @@ public class DqlReport extends Report implements ReportIface {
             return result;
         }
         if (query.getChannelName().equals("*")) {
-            requestedChannelNames = channelNames;
+            requestedChannelNames = device.channels.split(",");
         } else {
             requestedChannelNames = query.getChannelName().split(",");
         }
@@ -163,7 +163,6 @@ public class DqlReport extends Report implements ReportIface {
                     String channels = rs.getString(1);
                     if (channels != null) {
                         channelNames = channels.split(","); // channels names declared in the device
-
                         for (String channel : channelNames) {
                             deviceChannelNamesSet.add(channel);
                         }
@@ -432,7 +431,7 @@ public class DqlReport extends Report implements ReportIface {
 
     private DeviceDto getDevice(AgroalDataSource oltpDs, String eui, String userId) {
         DeviceDto device = null;
-        String sql = "SELECT eui,name,latitude,longitude,altitude FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        String sql = "SELECT eui,name,latitude,longitude,altitude,channels FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
         try (Connection conn = oltpDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, eui);
@@ -447,6 +446,7 @@ public class DqlReport extends Report implements ReportIface {
                     device.latitude = rs.getDouble("latitude");
                     device.longitude = rs.getDouble("longitude");
                     device.altitude = rs.getDouble("altitude");
+                    device.channels = rs.getString("channels");
                 }
             }
         } catch (SQLException ex) {
@@ -458,7 +458,7 @@ public class DqlReport extends Report implements ReportIface {
     private List<DeviceDto> getGroupDevices(String groupEui, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, User user) {
         List<DeviceDto> devices = new ArrayList<>();
-        String sql = "SELECT eui,name,latitude,longitude,altitude,configuration FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        String sql = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
         try (Connection conn = oltpDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, "%," + groupEui + ",%");
@@ -479,6 +479,7 @@ public class DqlReport extends Report implements ReportIface {
                     device.configuration.put("latitude", String.valueOf(device.latitude));
                     device.configuration.put("longitude", String.valueOf(device.longitude));
                     device.configuration.put("altitude", String.valueOf(device.altitude));
+                    device.channels = rs.getString("channels");
                     devices.add(device);
                 }
             }
