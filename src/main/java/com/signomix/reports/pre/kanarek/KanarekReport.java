@@ -3,11 +3,11 @@ package com.signomix.reports.pre.kanarek;
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.ReportResult;
-import com.signomix.reports.pre.DqlReport;
+import com.signomix.reports.pre.CommandsReport;
 
 import io.agroal.api.AgroalDataSource;
 
-public class KanarekReport extends DqlReport {
+public class KanarekReport extends CommandsReport {
 
     @Override
     public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,

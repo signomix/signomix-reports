@@ -21,7 +21,7 @@ import org.jboss.logging.Logger;
 
 public class IntervalReport extends Report implements ReportIface {
 
-    private static final Logger logger = Logger.getLogger(DqlReport.class);
+    private static final Logger logger = Logger.getLogger(CommandsReport.class);
 
     private int defaultLimit = 500;
     private static final String DATASET_NAME = "dataset0";

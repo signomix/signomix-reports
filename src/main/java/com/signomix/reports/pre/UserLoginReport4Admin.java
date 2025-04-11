@@ -21,7 +21,7 @@ import io.agroal.api.AgroalDataSource;
 
 public class UserLoginReport4Admin extends Report implements ReportIface {
 
-    private static final Logger logger = Logger.getLogger(DqlReport.class);
+    private static final Logger logger = Logger.getLogger(CommandsReport.class);
 
     @Override
     public ReportResult getReportResult(
