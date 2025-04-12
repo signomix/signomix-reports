@@ -22,7 +22,7 @@ import io.agroal.api.AgroalDataSource;
 
 public class UserLoginReport extends Report implements ReportIface {
 
-    private static final Logger logger = Logger.getLogger(CommandsReport.class);
+    private static final Logger logger = Logger.getLogger(StatusReport2.class);
 
     @Override
     public ReportResult getReportResult(

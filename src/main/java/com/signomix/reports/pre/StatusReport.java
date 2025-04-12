@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 
 import org.jboss.logging.Logger;
@@ -15,7 +14,6 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
-import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.Dataset;
 import com.signomix.common.db.DatasetHeader;
 import com.signomix.common.db.DatasetRow;
@@ -25,7 +23,7 @@ import com.signomix.common.db.ReportResult;
 
 import io.agroal.api.AgroalDataSource;
 
-public class DqlReport extends Report implements ReportIface {
+public class StatusReport extends Report implements ReportIface {
 
     private static final Logger logger = Logger.getLogger(StatusReport.class);
 
@@ -79,17 +77,6 @@ public class DqlReport extends Report implements ReportIface {
         } catch (Exception e) {
             logger.error("Error getting default limit: " + e.getMessage());
         }
-        /*
-         * String reportName = DATASET_NAME;
-         * ReportResult result = new ReportResult();
-         * result.setQuery("default", query);
-         * result.contentType = "application/json";
-         * result.setId(-1L);
-         * result.setTitle("");
-         * result.setDescription("");
-         * result.setTimestamp(new Timestamp(System.currentTimeMillis()));
-         * result.setQuery(reportName, query);
-         */
 
         ReportResult result;
         if (query.getEui() != null) {
@@ -122,83 +109,19 @@ public class DqlReport extends Report implements ReportIface {
         result.setTitle("");
         result.setDescription("");
         result.setTimestamp(new Timestamp(System.currentTimeMillis()));
-        // result.setQuery(reportName, query);
 
-        /*
-         * String devEui = getDevice(oltpDs, query.getEui(), user.uid);
-         * if (devEui == null) {
-         * result.error("No device found: " + query.getEui());
-         * return result;
-         * }
-         */
         Dataset dataset = new Dataset(query.getEui());
         dataset.name = reportName;
         dataset.eui = query.getEui();
         dataset.size = 0L;
 
         // get channel names
-        HashMap<String, String> channelColumnNames = new HashMap<>();
-        String[] channelNames = {};
+        String[] channelNames = { "status", "alert" };
         String[] requestedChannelNames = {};
-        HashSet<String> channelNamesSet = new HashSet<>();
-        if (query.getChannelName() == null) {
-            result.error("No channel name specified");
-            return result;
-        }
-        if (query.getChannelName().equals("*")) {
-            requestedChannelNames = device.channels.split(",");
+        if (query.getChannelName() == null || query.getChannelName().isEmpty() || query.getChannelName().equals("*")) {
+            requestedChannelNames = channelNames;
         } else {
             requestedChannelNames = query.getChannelName().split(",");
-        }
-        for (String channel : requestedChannelNames) {
-            channelNamesSet.add(channel);
-        }
-        HashSet<String> deviceChannelNamesSet = new HashSet<>();
-        String sql = "SELECT channels FROM devicechannels WHERE eui = ?";
-        try (Connection conn = oltpDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, query.getEui());
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    String channels = rs.getString(1);
-                    if (channels != null) {
-                        channelNames = channels.split(","); // channels names declared in the device
-                        for (String channel : channelNames) {
-                            deviceChannelNamesSet.add(channel);
-                        }
-                        for (int i = 0; i < channelNames.length; i++) {
-                            if (channelNamesSet.contains(channelNames[i])) {
-                                channelColumnNames.put(channelNames[i], "d" + (i + 1));
-                            }
-                        }
-                    }
-                    // device coordinates are added to the dataset if not already present
-                    // (latitude, longitude, altitude)
-                    // those channels columns won't be named as d1, d2, d3, etc. but as latitude,
-                    // longitude, altitude
-                    if (channelNamesSet.contains("latitude")) {
-                        if (!deviceChannelNamesSet.contains("latitude")) {
-                            channelColumnNames.put("latitude", "latitude");
-                        }
-                    }
-                    if (channelNamesSet.contains("longitude")) {
-                        if (!deviceChannelNamesSet.contains("longitude")) {
-                            channelColumnNames.put("longitude", "longitude");
-                        }
-                    }
-                    if (channelNamesSet.contains("altitude")) {
-                        if (!deviceChannelNamesSet.contains("altitude")) {
-                            channelColumnNames.put("altitude", "altitude");
-                        }
-                    }
-                } else {
-                    result.error("No channel definition found for device " + query.getEui());
-                    return result;
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Error getting channel names: " + ex.getMessage());
-            result.error("Error getting channel names: " + ex.getMessage());
         }
 
         DatasetHeader header = new DatasetHeader(query.getEui());
@@ -208,74 +131,30 @@ public class DqlReport extends Report implements ReportIface {
         result.addDatasetHeader(header);
 
         // get data
-        sql = getSqlQuery(query, channelColumnNames, user);
-        logger.info("SQL query: " + sql);
+        String sql = getSqlQuery(query);
+        logger.debug("SQL query: " + sql);
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, query.getEui());
-            int idx = 2;
-            if (query.getFromTs() != null) {
-                stmt.setTimestamp(idx++, query.getFromTs());
-                if (query.getToTs() != null) {
-                    stmt.setTimestamp(idx++, query.getToTs());
-                }
-            }
-            if (query.getProject() != null) {
-                stmt.setString(idx++, query.getProject());
-            }
-            stmt.setInt(idx++, query.getLimit());
-            
+            stmt.setInt(2, query.getLimit() > 0 ? query.getLimit() : defaultLimit);
             try (ResultSet rs = stmt.executeQuery()) {
                 double value;
-                boolean noNulls;
-                String columnName;
                 while (rs.next()) {
                     DatasetRow row = new DatasetRow();
                     row.timestamp = rs.getTimestamp("tstamp").getTime();
-                    noNulls = true;
                     for (int i = 0; i < requestedChannelNames.length; i++) {
                         try {
-                            columnName = channelColumnNames.get(requestedChannelNames[i]);
-                            // if the column name starts with "d", it is a data channel
-                            // otherwise it is a device configuration parameter
-                            if (columnName.startsWith("d")) {
-                                value = rs.getDouble(columnName);
-                                // value = rs.getDouble(channelColumnNames.get(requestedChannelNames[i]));
-                                if (rs.wasNull()) {
-                                    row.values.add(null);
-                                    noNulls = false;
-                                } else {
-                                    row.values.add(value);
-                                }
+                            value = rs.getDouble(requestedChannelNames[i]);
+                            if (rs.wasNull()) {
+                                row.values.add(null);
                             } else {
-                                // TODO: get device configuration parameters
-                                switch (columnName) {
-                                    case "latitude":
-                                        row.values.add(device.latitude);
-                                        break;
-                                    case "longitude":
-                                        row.values.add(device.longitude);
-                                        break;
-                                    case "altitude":
-                                        row.values.add(device.altitude);
-                                        break;
-                                    default:
-                                        logger.warn("Unknown column name: " + columnName);
-                                        row.values.add(0d);
-                                }
+                                row.values.add(value);
                             }
                         } catch (Exception ex) {
                             logger.warn("Error getting value: " + ex.getMessage());
                             // probably NaN value
                             row.values.add(null);
-                            noNulls = false;
                         }
-                    }
-
-                    // the query already filters out nulls
-                    // but in case of NaN values, the row is skipped
-                    if (query.isNotNull() && !noNulls) {
-                        continue;
                     }
                     dataset.data.add(row);
                 }
@@ -285,11 +164,6 @@ public class DqlReport extends Report implements ReportIface {
         } catch (SQLException ex) {
             logger.error("Error getting data: " + ex.getMessage());
             result.error("Error getting data: " + ex.getMessage());
-        }
-        // when last X values are requested (unable to get result sorted by database),
-        // sort the result if ascending order is requested (descending order is default)
-        if (query.isSortingForced()) {
-            result = sortResult(result, DATASET_NAME, QUERY_NAME, true);
         }
         return result;
     }
@@ -324,56 +198,14 @@ public class DqlReport extends Report implements ReportIface {
      * @param channelColumnNames
      * @return
      */
-    private String getSqlQuery(DataQuery query, HashMap<String, String> channelColumnNames, User user) {
+    private String getSqlQuery(DataQuery query) {
 
-        String columnName;
-        String columns = "tstamp,";
-        for (String channel : channelColumnNames.keySet()) {
-            columnName = channelColumnNames.get(channel);
-            if (columnName.startsWith("d")) {
-                columns += columnName + ",";
-            }
-        }
-        columns = columns.substring(0, columns.length() - 1);
-
-        String notNullCondition;
-
-        if (query.isNotNull()) {
-            notNullCondition = " AND NOT (";
-            for (String channel : channelColumnNames.keySet()) {
-                columnName = channelColumnNames.get(channel);
-                if (columnName.startsWith("d")) {
-                    notNullCondition += channelColumnNames.get(channel) + " IS NULL OR ";
-                }
-            }
-            notNullCondition = notNullCondition.substring(0, notNullCondition.length() - 4);
-            notNullCondition += ") ";
+        String sql;
+        if (query.getGroup() != null) {
+            sql = "SELECT eui, last(status,ts) as status, last(alert,ts) as alert, last(ts,ts) as tstamp FROM devicestatus WHERE eui IN (SELECT eui FROM devices WHERE groups LIKE ?) GROUP BY eui ORDER BY eui";
         } else {
-            notNullCondition = "";
+            sql = "SELECT eui, status, alert, ts as tstamp FROM devicestatus WHERE eui = ? ORDER BY ts DESC LIMIT ?";
         }
-        String sql = "SELECT " + columns + " FROM analyticdata WHERE eui = ? ";
-        if (query.getFromTs() != null) {
-            sql += " AND tstamp >= ? ";
-            if (query.getToTs() != null) {
-                sql += " AND tstamp <= ? ";
-            }
-        }
-        sql += getTimestampCondition(user);
-
-        if (query.getProject() != null) {
-            sql += " AND project = ? ";
-        }
-
-        sql += notNullCondition;
-
-        if (query.isSortingForced()) {
-            sql += " ORDER BY tstamp DESC ";
-        } else {
-            sql += " ORDER BY tstamp " + query.getSortOrder() + " ";
-        }
-
-        sql += " LIMIT ? ";
-
         return sql;
     }
 
@@ -386,45 +218,104 @@ public class DqlReport extends Report implements ReportIface {
         result.setTitle("");
         result.setDescription("");
         result.setTimestamp(new Timestamp(System.currentTimeMillis()));
-        List<DeviceDto> devices = getGroupDevices(query.getGroup(), oltpDs, logsDs, user);
-        if (devices.isEmpty()) {
-            result.error("No devices found in group " + query.getGroup());
-            return result;
-        } else {
-            devices.forEach(device -> {
-                result.configs.put(device.eui,device.configuration);
-                logger.info("Group device: " + device);
-            });
-            
-        }
-        ReportResult tmpResult;
-        Dataset dataset;
-        DataQuery tmpQuery;
-        for (int i = 0; i < devices.size(); i++) {
-            if (devices.get(i) == null) {
-                logger.debug("Skipping null device");
-                continue;
-            }
-            try {
-                tmpQuery = DataQuery.parse(query.getSource());
-            } catch (DataQueryException e) {
-                logger.warn("Error parsing query: " + e.getMessage());
-                result.error("Error parsing query: " + e.getMessage());
-                return result;
-            }
-            tmpResult = new ReportResult();
-            tmpQuery.setEui(devices.get(i).eui);
-            tmpQuery.setGroup(null);
-            tmpResult = getDeviceData(olapDs, oltpDs, logsDs, tmpQuery, user, defaultLimit, devices.get(i));
-            result.headers.add(tmpResult.headers.get(0));
-            dataset = tmpResult.datasets.get(0);
-            if (dataset != null && dataset.size > 0) {
-                result.datasets.add(dataset);
-            } else {
-                logger.warn("No data for device: " + devices.get(i));
-            }
 
+        Dataset dataset = null;
+
+        String[] channelNames = { "status", "alert" };
+        String[] requestedChannelNames = {};
+        if (query.getChannelName() == null || query.getChannelName().isEmpty() || query.getChannelName().equals("*")) {
+            requestedChannelNames = channelNames;
+        } else {
+            requestedChannelNames = query.getChannelName().split(",");
         }
+
+        DatasetHeader header = new DatasetHeader(query.getEui());
+        for (int i = 0; i < requestedChannelNames.length; i++) {
+            header.columns.add(requestedChannelNames[i]);
+        }
+
+        // get data
+        String sql = getSqlQuery(query);
+        String eui = "";
+        String deviceName = "";
+        String previousEui = "";
+        ReportResult tmpResult = null;
+        try (Connection conn = olapDs.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%,"+query.getGroup()+",%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                double value;
+                while (rs.next()) {
+                    eui = rs.getString("eui");
+                    if (!eui.equals(previousEui)) {
+                        result.addDatasetHeader(header);
+                        if (dataset != null && dataset.data.size() > 0) {
+                            result.datasets.add(dataset);
+                        }
+                        deviceName = eui;
+                        dataset = new Dataset(deviceName); //
+                        dataset.eui = eui;
+                        previousEui = eui;
+                    }
+
+                    DatasetRow row = new DatasetRow();
+                    row.timestamp = rs.getTimestamp("tstamp").getTime();
+                    for (int i = 0; i < requestedChannelNames.length; i++) {
+                        try {
+                            value = rs.getDouble(requestedChannelNames[i]);
+                            if (rs.wasNull()) {
+                                row.values.add(null);
+                            } else {
+                                row.values.add(value);
+                            }
+                        } catch (Exception ex) {
+                            logger.warn("Error getting value: " + ex.getMessage());
+                            // probably NaN value
+                            row.values.add(null);
+                        }
+                    }
+                    dataset.data.add(row);
+                }
+                result.addDatasetHeader(header);
+                if (dataset != null && dataset.data.size() > 0) {
+                    result.datasets.add(dataset);
+                }
+                // dataset.size = (long) dataset.data.size();
+                // result.addDataset(dataset);
+            }
+        } catch (SQLException ex) {
+            logger.error("Error getting data: " + ex.getMessage());
+            result.error("Error getting data: " + ex.getMessage());
+        }
+
+        /*
+         * for (int i = 0; i < devices.size(); i++) {
+         * if (devices.get(i) == null) {
+         * logger.debug("Skipping null device");
+         * continue;
+         * }
+         * try {
+         * tmpQuery = DataQuery.parse(query.getSource());
+         * } catch (DataQueryException e) {
+         * logger.warn("Error parsing query: " + e.getMessage());
+         * result.error("Error parsing query: " + e.getMessage());
+         * return result;
+         * }
+         * tmpResult = new ReportResult();
+         * tmpQuery.setEui(devices.get(i).eui);
+         * tmpQuery.setGroup(null);
+         * tmpResult = getDeviceData(olapDs, oltpDs, logsDs, tmpQuery, user,
+         * defaultLimit, devices.get(i));
+         * result.headers.add(tmpResult.headers.get(0));
+         * dataset = tmpResult.datasets.get(0);
+         * if (dataset != null && dataset.size > 0) {
+         * result.datasets.add(dataset);
+         * } else {
+         * logger.warn("No data for device: " + devices.get(i));
+         * }
+         * 
+         * }
+         */
         logger.info("result dataset size: " + result.datasets.size());
         return result;
     }
@@ -490,7 +381,8 @@ public class DqlReport extends Report implements ReportIface {
     }
 
     /**
-     * Deserializes device configuration as map of String key-value pairs from JSON string.
+     * Deserializes device configuration as map of String key-value pairs from JSON
+     * string.
      */
     @SuppressWarnings("unchecked")
     private HashMap<String, Object> deserializeConfiguration(String configuration) {
@@ -533,12 +425,14 @@ public class DqlReport extends Report implements ReportIface {
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, User user, String format) {
+    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, User user, String format) {
         return null;
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
+    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
         // TODO: Implement this method
         return null;
     }
