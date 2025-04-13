@@ -17,11 +17,12 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+
 import org.jboss.logging.Logger;
 
 public class IntervalReport extends Report implements ReportIface {
 
-    private static final Logger logger = Logger.getLogger(StatusReport2.class);
+    private static final Logger logger = Logger.getLogger(IntervalReport.class);
 
     private int defaultLimit = 500;
     private static final String DATASET_NAME = "dataset0";

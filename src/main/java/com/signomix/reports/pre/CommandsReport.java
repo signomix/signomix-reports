@@ -22,7 +22,7 @@ import io.agroal.api.AgroalDataSource;
 
 public class CommandsReport extends Report implements ReportIface {
 
-    private static final Logger logger = Logger.getLogger(StatusReport2.class);
+    private static final Logger logger = Logger.getLogger(CommandsReport.class);
 
     private static final String DATASET_NAME = "dataset0";
     private static final String QUERY_NAME = "default";
