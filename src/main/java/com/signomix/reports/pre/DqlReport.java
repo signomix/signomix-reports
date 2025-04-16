@@ -209,7 +209,6 @@ public class DqlReport extends Report implements ReportIface {
 
         // get data
         sql = getSqlQuery(query, channelColumnNames, user);
-        logger.info("SQL query: " + sql);
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, query.getEui());
@@ -224,7 +223,7 @@ public class DqlReport extends Report implements ReportIface {
                 stmt.setString(idx++, query.getProject());
             }
             stmt.setInt(idx++, query.getLimit());
-            
+
             try (ResultSet rs = stmt.executeQuery()) {
                 double value;
                 boolean noNulls;
@@ -327,11 +326,21 @@ public class DqlReport extends Report implements ReportIface {
     private String getSqlQuery(DataQuery query, HashMap<String, String> channelColumnNames, User user) {
 
         String columnName;
-        String columns = "tstamp,";
+        String columns;
+        if (query.isSkipNull()) {
+            columns = "last(tstamp, tstamp) AS tstamp,";
+        } else {
+            columns = "tstamp,";
+        }
         for (String channel : channelColumnNames.keySet()) {
             columnName = channelColumnNames.get(channel);
             if (columnName.startsWith("d")) {
-                columns += columnName + ",";
+                if (query.isSkipNull()) {
+                    columns += "last(" + columnName + ",tstamp) FILTER (WHERE " + columnName + " IS NOT NULL) AS "
+                            + columnName + ",";
+                } else {
+                    columns += columnName + ",";
+                }
             }
         }
         columns = columns.substring(0, columns.length() - 1);
@@ -392,10 +401,10 @@ public class DqlReport extends Report implements ReportIface {
             return result;
         } else {
             devices.forEach(device -> {
-                result.configs.put(device.eui,device.configuration);
-                logger.info("Group device: " + device);
+                result.configs.put(device.eui, device.configuration);
+                logger.debug("Group device: " + device);
             });
-            
+
         }
         ReportResult tmpResult;
         Dataset dataset;
@@ -421,7 +430,7 @@ public class DqlReport extends Report implements ReportIface {
             if (dataset != null && dataset.size > 0) {
                 result.datasets.add(dataset);
             } else {
-                logger.warn("No data for device: " + devices.get(i));
+                logger.debug("No data for device: " + devices.get(i));
             }
 
         }
@@ -490,7 +499,8 @@ public class DqlReport extends Report implements ReportIface {
     }
 
     /**
-     * Deserializes device configuration as map of String key-value pairs from JSON string.
+     * Deserializes device configuration as map of String key-value pairs from JSON
+     * string.
      */
     @SuppressWarnings("unchecked")
     private HashMap<String, Object> deserializeConfiguration(String configuration) {
@@ -499,7 +509,7 @@ public class DqlReport extends Report implements ReportIface {
         try {
             config = mapper.readValue(configuration, HashMap.class);
         } catch (Exception e) {
-            logger.error("Error deserializing device configuration: " + e.getMessage());
+            logger.debug("Error deserializing device configuration: " + e.getMessage());
         }
         return config;
     }
@@ -533,12 +543,14 @@ public class DqlReport extends Report implements ReportIface {
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, User user, String format) {
+    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, User user, String format) {
         return null;
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
+    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
         // TODO: Implement this method
         return null;
     }

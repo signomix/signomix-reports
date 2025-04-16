@@ -53,6 +53,7 @@ public class ReportApi {
         DataQuery dataQuery;
         try {
             dataQuery = DataQuery.parse(query);
+            logger.info("getCompiledReport: " + dataQuery.getSource());
         } catch (DataQueryException e) {
             logger.warn(e.getMessage());
             ReportResult result = new ReportResult();
