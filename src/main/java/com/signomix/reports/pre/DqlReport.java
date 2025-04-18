@@ -283,6 +283,7 @@ public class DqlReport extends Report implements ReportIface {
             }
         } catch (SQLException ex) {
             logger.error("Error getting data: " + ex.getMessage());
+            logger.error("Problem found in: " + sql);
             result.error("Error getting data: " + ex.getMessage());
         }
         // when last X values are requested (unable to get result sorted by database),
@@ -347,7 +348,7 @@ public class DqlReport extends Report implements ReportIface {
 
         String notNullCondition;
 
-        if (query.isNotNull()) {
+        if (query.isNotNull() && channelColumnNames.size() > 0) {
             notNullCondition = " AND NOT (";
             for (String channel : channelColumnNames.keySet()) {
                 columnName = channelColumnNames.get(channel);
@@ -355,7 +356,9 @@ public class DqlReport extends Report implements ReportIface {
                     notNullCondition += channelColumnNames.get(channel) + " IS NULL OR ";
                 }
             }
-            notNullCondition = notNullCondition.substring(0, notNullCondition.length() - 4);
+            if(notNullCondition.endsWith(" OR ")) {
+                notNullCondition = notNullCondition.substring(0, notNullCondition.length() - 4);
+            }
             notNullCondition += ") ";
         } else {
             notNullCondition = "";
@@ -434,7 +437,7 @@ public class DqlReport extends Report implements ReportIface {
             }
 
         }
-        logger.info("result dataset size: " + result.datasets.size());
+        logger.debug("result dataset size: " + result.datasets.size());
         return result;
     }
 
