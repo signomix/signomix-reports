@@ -32,6 +32,8 @@ public class DqlReport extends Report implements ReportIface {
     private static final String DATASET_NAME = "dataset0";
     private static final String QUERY_NAME = "default";
 
+    private static final int DEFAULT_ORGANIZATION = 1;
+
     @Override
     public ReportResult getReportResult(
             AgroalDataSource olapDs,
@@ -93,7 +95,7 @@ public class DqlReport extends Report implements ReportIface {
 
         ReportResult result;
         if (query.getEui() != null) {
-            DeviceDto device = getDevice(oltpDs, query.getEui(), user.uid);
+            DeviceDto device = getDevice(oltpDs, query.getEui(), user.uid, user.organization);
             if (device == null) {
                 result = new ReportResult();
                 result.contentType = "application/json";
@@ -356,7 +358,7 @@ public class DqlReport extends Report implements ReportIface {
                     notNullCondition += channelColumnNames.get(channel) + " IS NULL OR ";
                 }
             }
-            if(notNullCondition.endsWith(" OR ")) {
+            if (notNullCondition.endsWith(" OR ")) {
                 notNullCondition = notNullCondition.substring(0, notNullCondition.length() - 4);
             }
             notNullCondition += ") ";
@@ -441,15 +443,25 @@ public class DqlReport extends Report implements ReportIface {
         return result;
     }
 
-    private DeviceDto getDevice(AgroalDataSource oltpDs, String eui, String userId) {
+    private DeviceDto getDevice(AgroalDataSource oltpDs, String eui, String userId, Long organization) {
         DeviceDto device = null;
-        String sql = "SELECT eui,name,latitude,longitude,altitude,channels FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        String sql;
+        if (organization == DEFAULT_ORGANIZATION) {
+            sql = "SELECT eui,name,latitude,longitude,altitude,channels FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        } else {
+            sql = "SELECT eui,name,latitude,longitude,altitude,channels FROM devices WHERE eui = ? AND organization = ?";
+        }
         try (Connection conn = oltpDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, eui);
-            stmt.setString(2, userId);
-            stmt.setString(3, "%," + userId + ",%");
-            stmt.setString(4, "%," + userId + ",%");
+            if (organization == DEFAULT_ORGANIZATION) {
+                stmt.setString(1, eui);
+                stmt.setString(2, userId);
+                stmt.setString(3, "%," + userId + ",%");
+                stmt.setString(4, "%," + userId + ",%");
+            } else {
+                stmt.setString(1, eui);
+                stmt.setLong(2, organization);
+            }
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     device = new DeviceDto();
@@ -470,13 +482,28 @@ public class DqlReport extends Report implements ReportIface {
     private List<DeviceDto> getGroupDevices(String groupEui, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, User user) {
         List<DeviceDto> devices = new ArrayList<>();
-        String sql = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        String sql;
+        if(user.organization == DEFAULT_ORGANIZATION) {
+            sql = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        } else {    
+            sql = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND organization = ?";
+        }
+        // = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
         try (Connection conn = oltpDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, "%," + groupEui + ",%");
-            stmt.setString(2, user.uid);
-            stmt.setString(3, "%," + user.uid + ",%");
-            stmt.setString(4, "%," + user.uid + ",%");
+            if (user.organization == DEFAULT_ORGANIZATION) {
+                stmt.setString(1, "%," + groupEui + ",%");
+                stmt.setString(2, user.uid);
+                stmt.setString(3, "%," + user.uid + ",%");
+                stmt.setString(4, "%," + user.uid + ",%");
+            } else {
+                stmt.setString(1, "%," + groupEui + ",%");
+                stmt.setLong(2, user.organization);
+            }
+            // stmt.setString(1, "%," + groupEui + ",%");
+            // stmt.setString(2, user.uid);
+            // stmt.setString(3, "%," + user.uid + ",%");
+            // stmt.setString(4, "%," + user.uid + ",%");
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     DeviceDto device = new DeviceDto();
