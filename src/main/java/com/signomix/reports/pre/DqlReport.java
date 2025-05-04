@@ -303,11 +303,13 @@ public class DqlReport extends Report implements ReportIface {
      * - eui
      * - group
      * - channel (from channelColumnNames parameter, not DQL channel keyword )
-     * - last
+     * - last (==limit)
+     * - limit // default limit is 500
      * - from
      * - to
      * - project
      * - notnull
+     * - skipnull
      * - ascending
      * - descending
      * Not supported:
@@ -366,12 +368,14 @@ public class DqlReport extends Report implements ReportIface {
             notNullCondition = "";
         }
         String sql = "SELECT " + columns + " FROM analyticdata WHERE eui = ? ";
+
         if (query.getFromTs() != null) {
             sql += " AND tstamp >= ? ";
             if (query.getToTs() != null) {
                 sql += " AND tstamp <= ? ";
             }
         }
+
         sql += getTimestampCondition(user);
 
         if (query.getProject() != null) {
