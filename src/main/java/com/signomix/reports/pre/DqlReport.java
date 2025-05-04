@@ -113,9 +113,19 @@ public class DqlReport extends Report implements ReportIface {
         return result;
     }
 
+    private boolean getWithDeviceStatus(String[] channelNames) {
+        for (String channel : channelNames) {
+            if (channel.equals("device_status")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private ReportResult getDeviceData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit, DeviceDto device) {
 
+        boolean withDeviceStatus = false;
         String reportName = DATASET_NAME;
         ReportResult result = new ReportResult();
         result.setQuery("default", query);
@@ -152,6 +162,7 @@ public class DqlReport extends Report implements ReportIface {
         } else {
             requestedChannelNames = query.getChannelName().split(",");
         }
+        withDeviceStatus = getWithDeviceStatus(requestedChannelNames);
         for (String channel : requestedChannelNames) {
             channelNamesSet.add(channel);
         }
@@ -210,11 +221,14 @@ public class DqlReport extends Report implements ReportIface {
         result.addDatasetHeader(header);
 
         // get data
-        sql = getSqlQuery(query, channelColumnNames, user);
+        sql = getSqlQuery(query, channelColumnNames, user, withDeviceStatus);
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, query.getEui());
             int idx = 2;
+            if (withDeviceStatus) {
+                stmt.setString(idx++, query.getEui());
+            }
             if (query.getFromTs() != null) {
                 stmt.setTimestamp(idx++, query.getFromTs());
                 if (query.getToTs() != null) {
@@ -239,7 +253,7 @@ public class DqlReport extends Report implements ReportIface {
                             columnName = channelColumnNames.get(requestedChannelNames[i]);
                             // if the column name starts with "d", it is a data channel
                             // otherwise it is a device configuration parameter
-                            if (columnName.startsWith("d")) {
+                            if (columnName!=null && columnName.startsWith("d")) {
                                 value = rs.getDouble(columnName);
                                 // value = rs.getDouble(channelColumnNames.get(requestedChannelNames[i]));
                                 if (rs.wasNull()) {
@@ -250,7 +264,7 @@ public class DqlReport extends Report implements ReportIface {
                                 }
                             } else {
                                 // TODO: get device configuration parameters
-                                switch (columnName) {
+                                switch (requestedChannelNames[i]) {
                                     case "latitude":
                                         row.values.add(device.latitude);
                                         break;
@@ -259,6 +273,9 @@ public class DqlReport extends Report implements ReportIface {
                                         break;
                                     case "altitude":
                                         row.values.add(device.altitude);
+                                        break;
+                                    case "device_status":
+                                        row.values.add(rs.getString("device_status"));
                                         break;
                                     default:
                                         logger.warn("Unknown column name: " + columnName);
@@ -312,6 +329,7 @@ public class DqlReport extends Report implements ReportIface {
      * - skipnull
      * - ascending
      * - descending
+     * - withstatus
      * Not supported:
      * - sback
      * - minimum
@@ -328,7 +346,7 @@ public class DqlReport extends Report implements ReportIface {
      * @param channelColumnNames
      * @return
      */
-    private String getSqlQuery(DataQuery query, HashMap<String, String> channelColumnNames, User user) {
+    private String getSqlQuery(DataQuery query, HashMap<String, String> channelColumnNames, User user, boolean withStatus) {
 
         String columnName;
         String columns;
@@ -349,7 +367,10 @@ public class DqlReport extends Report implements ReportIface {
             }
         }
         columns = columns.substring(0, columns.length() - 1);
-
+        if(withStatus) {
+            columns += "," + getDeviceStatusPart();
+        }
+        
         String notNullCondition;
 
         if (query.isNotNull() && channelColumnNames.size() > 0) {
@@ -587,6 +608,10 @@ public class DqlReport extends Report implements ReportIface {
             DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
         // TODO: Implement this method
         return null;
+    }
+
+    private String getDeviceStatusPart() {
+        return "(SELECT last(status,ts) FROM devicestatus FILTER WHERE eui=? AND status IS NOT NULL) AS device_status";
     }
 
 }
