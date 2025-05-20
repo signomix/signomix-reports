@@ -1,16 +1,5 @@
 package com.signomix.reports.pre;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import org.jboss.logging.Logger;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
@@ -20,8 +9,16 @@ import com.signomix.common.db.DatasetRow;
 import com.signomix.common.db.Report;
 import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
-
 import io.agroal.api.AgroalDataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import org.jboss.logging.Logger;
 
 public class StatusReport extends Report implements ReportIface {
 
@@ -32,14 +29,15 @@ public class StatusReport extends Report implements ReportIface {
 
     @Override
     public ReportResult getReportResult(
-            AgroalDataSource olapDs,
-            AgroalDataSource oltpDs,
-            AgroalDataSource logsDs,
-            DataQuery query,
-            Integer organization,
-            Integer tenant,
-            String path,
-            User user) {
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user
+    ) {
         String reportName = DATASET_NAME;
         ReportResult result = new ReportResult();
         result.setQuery(QUERY_NAME, query);
@@ -61,16 +59,16 @@ public class StatusReport extends Report implements ReportIface {
         result.addDataset(data);
 
         return result;
-
     }
 
     @Override
     public ReportResult getReportResult(
-            AgroalDataSource olapDs,
-            AgroalDataSource oltpDs,
-            AgroalDataSource logsDs,
-            DataQuery query,
-            User user) {
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user
+    ) {
         int defaultLimit = 500;
         try {
             defaultLimit = (Integer) options.get("result.limit");
@@ -80,16 +78,31 @@ public class StatusReport extends Report implements ReportIface {
 
         ReportResult result;
         if (query.getEui() != null) {
-            DeviceDto device = getDevice(oltpDs, query.getEui(), user.uid);
+            DeviceDto device = getDevice(oltpDs, query.getEui(), user);
             if (device == null) {
                 result = new ReportResult();
                 result.contentType = "application/json";
                 result.error(404, "No device found: " + query.getEui());
                 return result;
             }
-            result = getDeviceData(olapDs, oltpDs, logsDs, query, user, defaultLimit, device);
+            result = getDeviceData(
+                olapDs,
+                oltpDs,
+                logsDs,
+                query,
+                user,
+                defaultLimit,
+                device
+            );
         } else if (query.getGroup() != null) {
-            result = getGroupData(olapDs, oltpDs, logsDs, query, user, defaultLimit);
+            result = getGroupData(
+                olapDs,
+                oltpDs,
+                logsDs,
+                query,
+                user,
+                defaultLimit
+            );
         } else {
             result = new ReportResult();
             result.contentType = "application/json";
@@ -98,9 +111,15 @@ public class StatusReport extends Report implements ReportIface {
         return result;
     }
 
-    private ReportResult getDeviceData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
-            AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit, DeviceDto device) {
-
+    private ReportResult getDeviceData(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        int defaultLimit,
+        DeviceDto device
+    ) {
         String reportName = DATASET_NAME;
         ReportResult result = new ReportResult();
         result.setQuery("default", query);
@@ -118,7 +137,11 @@ public class StatusReport extends Report implements ReportIface {
         // get channel names
         String[] channelNames = { "status", "alert" };
         String[] requestedChannelNames = {};
-        if (query.getChannelName() == null || query.getChannelName().isEmpty() || query.getChannelName().equals("*")) {
+        if (
+            query.getChannelName() == null ||
+            query.getChannelName().isEmpty() ||
+            query.getChannelName().equals("*")
+        ) {
             requestedChannelNames = channelNames;
         } else {
             requestedChannelNames = query.getChannelName().split(",");
@@ -133,10 +156,15 @@ public class StatusReport extends Report implements ReportIface {
         // get data
         String sql = getSqlQuery(query);
         logger.debug("SQL query: " + sql);
-        try (Connection conn = olapDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (
+            Connection conn = olapDs.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
             stmt.setString(1, query.getEui());
-            stmt.setInt(2, query.getLimit() > 0 ? query.getLimit() : defaultLimit);
+            stmt.setInt(
+                2,
+                query.getLimit() > 0 ? query.getLimit() : defaultLimit
+            );
             try (ResultSet rs = stmt.executeQuery()) {
                 double value;
                 while (rs.next()) {
@@ -151,7 +179,9 @@ public class StatusReport extends Report implements ReportIface {
                                 row.values.add(value);
                             }
                         } catch (Exception ex) {
-                            logger.warn("Error getting value: " + ex.getMessage());
+                            logger.warn(
+                                "Error getting value: " + ex.getMessage()
+                            );
                             // probably NaN value
                             row.values.add(null);
                         }
@@ -193,24 +223,31 @@ public class StatusReport extends Report implements ReportIface {
      * - tag
      * - virtual (won't be supported by this type of report)
      * - sort
-     * 
+     *
      * @param query
      * @param channelColumnNames
      * @return
      */
     private String getSqlQuery(DataQuery query) {
-
         String sql;
         if (query.getGroup() != null) {
-            sql = "SELECT eui, last(status,ts) as status, last(alert,ts) as alert, last(ts,ts) as tstamp FROM devicestatus WHERE eui IN (SELECT eui FROM devices WHERE groups LIKE ?) GROUP BY eui ORDER BY eui";
+            sql =
+                "SELECT eui, last(status,ts) as status, last(alert,ts) as alert, last(ts,ts) as tstamp FROM devicestatus WHERE eui IN (SELECT eui FROM devices WHERE groups LIKE ?) GROUP BY eui ORDER BY eui";
         } else {
-            sql = "SELECT eui, status, alert, ts as tstamp FROM devicestatus WHERE eui = ? ORDER BY ts DESC LIMIT ?";
+            sql =
+                "SELECT eui, status, alert, ts as tstamp FROM devicestatus WHERE eui = ? ORDER BY ts DESC LIMIT ?";
         }
         return sql;
     }
 
-    private ReportResult getGroupData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
-            AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit) {
+    private ReportResult getGroupData(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        int defaultLimit
+    ) {
         ReportResult result = new ReportResult();
         result.setQuery("default", query);
         result.contentType = "application/json";
@@ -223,7 +260,11 @@ public class StatusReport extends Report implements ReportIface {
 
         String[] channelNames = { "status", "alert" };
         String[] requestedChannelNames = {};
-        if (query.getChannelName() == null || query.getChannelName().isEmpty() || query.getChannelName().equals("*")) {
+        if (
+            query.getChannelName() == null ||
+            query.getChannelName().isEmpty() ||
+            query.getChannelName().equals("*")
+        ) {
             requestedChannelNames = channelNames;
         } else {
             requestedChannelNames = query.getChannelName().split(",");
@@ -240,9 +281,11 @@ public class StatusReport extends Report implements ReportIface {
         String deviceName = "";
         String previousEui = "";
         ReportResult tmpResult = null;
-        try (Connection conn = olapDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, "%,"+query.getGroup()+",%");
+        try (
+            Connection conn = olapDs.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
+            stmt.setString(1, "%," + query.getGroup() + ",%");
             try (ResultSet rs = stmt.executeQuery()) {
                 double value;
                 while (rs.next()) {
@@ -269,7 +312,9 @@ public class StatusReport extends Report implements ReportIface {
                                 row.values.add(value);
                             }
                         } catch (Exception ex) {
-                            logger.warn("Error getting value: " + ex.getMessage());
+                            logger.warn(
+                                "Error getting value: " + ex.getMessage()
+                            );
                             // probably NaN value
                             row.values.add(null);
                         }
@@ -313,22 +358,43 @@ public class StatusReport extends Report implements ReportIface {
          * } else {
          * logger.warn("No data for device: " + devices.get(i));
          * }
-         * 
+         *
          * }
          */
         logger.info("result dataset size: " + result.datasets.size());
         return result;
     }
 
-    private DeviceDto getDevice(AgroalDataSource oltpDs, String eui, String userId) {
+    private DeviceDto getDevice(
+        AgroalDataSource oltpDs,
+        String eui,
+        User user
+    ) {
+        if (eui == null || eui.isEmpty()) {
+            return null;
+        }
         DeviceDto device = null;
-        String sql = "SELECT eui,name,latitude,longitude,altitude,channels FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
-        try (Connection conn = oltpDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+        String sql;
+        if (user.organization != null && user.organization > 1) {
+            sql =
+                "SELECT eui,name,latitude,longitude,altitude,channels FROM devices WHERE eui = ? AND organization = ?";
+        } else {
+            sql =
+                "SELECT eui,name,latitude,longitude,altitude,channels FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        }
+        try (
+            Connection conn = oltpDs.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
             stmt.setString(1, eui);
-            stmt.setString(2, userId);
-            stmt.setString(3, "%," + userId + ",%");
-            stmt.setString(4, "%," + userId + ",%");
+            if (user.organization != null && user.organization <= 1) {
+                stmt.setString(2, user.uid);
+                stmt.setString(3, "%," + user.uid + ",%");
+                stmt.setString(4, "%," + user.uid + ",%");
+            } else {
+                stmt.setLong(2, user.organization);
+            }
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     device = new DeviceDto();
@@ -346,12 +412,19 @@ public class StatusReport extends Report implements ReportIface {
         return device;
     }
 
-    private List<DeviceDto> getGroupDevices(String groupEui, AgroalDataSource oltpDs,
-            AgroalDataSource logsDs, User user) {
+    private List<DeviceDto> getGroupDevices(
+        String groupEui,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        User user
+    ) {
         List<DeviceDto> devices = new ArrayList<>();
-        String sql = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
-        try (Connection conn = oltpDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        String sql =
+            "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        try (
+            Connection conn = oltpDs.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
             stmt.setString(1, "%," + groupEui + ",%");
             stmt.setString(2, user.uid);
             stmt.setString(3, "%," + user.uid + ",%");
@@ -364,12 +437,23 @@ public class StatusReport extends Report implements ReportIface {
                     device.latitude = rs.getDouble("latitude");
                     device.longitude = rs.getDouble("longitude");
                     device.altitude = rs.getDouble("altitude");
-                    device.configuration = deserializeConfiguration(rs.getString("configuration"));
+                    device.configuration = deserializeConfiguration(
+                        rs.getString("configuration")
+                    );
                     device.configuration.put("eui", device.eui);
                     device.configuration.put("name", device.name);
-                    device.configuration.put("latitude", String.valueOf(device.latitude));
-                    device.configuration.put("longitude", String.valueOf(device.longitude));
-                    device.configuration.put("altitude", String.valueOf(device.altitude));
+                    device.configuration.put(
+                        "latitude",
+                        String.valueOf(device.latitude)
+                    );
+                    device.configuration.put(
+                        "longitude",
+                        String.valueOf(device.longitude)
+                    );
+                    device.configuration.put(
+                        "altitude",
+                        String.valueOf(device.altitude)
+                    );
                     device.channels = rs.getString("channels");
                     devices.add(device);
                 }
@@ -385,56 +469,125 @@ public class StatusReport extends Report implements ReportIface {
      * string.
      */
     @SuppressWarnings("unchecked")
-    private HashMap<String, Object> deserializeConfiguration(String configuration) {
+    private HashMap<String, Object> deserializeConfiguration(
+        String configuration
+    ) {
         HashMap<String, Object> config = new HashMap<>();
         ObjectMapper mapper = new ObjectMapper();
         try {
             config = mapper.readValue(configuration, HashMap.class);
         } catch (Exception e) {
-            logger.error("Error deserializing device configuration: " + e.getMessage());
+            logger.error(
+                "Error deserializing device configuration: " + e.getMessage()
+            );
         }
         return config;
     }
 
     @Override
-    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, Integer organization, Integer tenant, String path, User user, Boolean withHeader) {
-        return super.getAsHtml(getReportResult(olapDs, oltpDs, logsDs, query, organization, tenant, path,
-                user), 0, withHeader);
+    public String getReportHtml(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user,
+        Boolean withHeader
+    ) {
+        return super.getAsHtml(
+            getReportResult(
+                olapDs,
+                oltpDs,
+                logsDs,
+                query,
+                organization,
+                tenant,
+                path,
+                user
+            ),
+            0,
+            withHeader
+        );
     }
 
     @Override
-    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, User user, Boolean withHeader) {
-        return super.getAsHtml(getReportResult(olapDs, oltpDs, logsDs, query, user), 0, withHeader);
+    public String getReportHtml(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        Boolean withHeader
+    ) {
+        return super.getAsHtml(
+            getReportResult(olapDs, oltpDs, logsDs, query, user),
+            0,
+            withHeader
+        );
     }
 
     @Override
-    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, Integer organization, Integer tenant, String path, User user) {
+    public String getReportCsv(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user
+    ) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportCsv'"
+        );
     }
 
     @Override
-    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, User user) {
-        ReportResult result = getReportResult(olapDs, oltpDs, logsDs, query, user);
-        return super.getAsCsv(result, 0, "\r\n",
-                ",", true);
+    public String getReportCsv(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user
+    ) {
+        ReportResult result = getReportResult(
+            olapDs,
+            oltpDs,
+            logsDs,
+            query,
+            user
+        );
+        return super.getAsCsv(result, 0, "\r\n", ",", true);
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, User user, String format) {
+    public String getReportFormat(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        String format
+    ) {
         return null;
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
+    public String getReportFormat(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user,
+        String format
+    ) {
         // TODO: Implement this method
         return null;
     }
-
 }
