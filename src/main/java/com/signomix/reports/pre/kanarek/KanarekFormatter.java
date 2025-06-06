@@ -15,22 +15,15 @@
  */
 package com.signomix.reports.pre.kanarek;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.jboss.logging.Logger;
-
-import com.cedarsoftware.util.io.JsonWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.signomix.common.db.Dataset;
 import com.signomix.common.db.DatasetHeader;
 import com.signomix.common.db.DatasetRow;
 import com.signomix.common.db.ReportResult;
 import com.signomix.common.iot.ChannelData;
-
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.ArrayList;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class KanarekFormatter {
@@ -43,7 +36,7 @@ public class KanarekFormatter {
      * Translates response result
      *
      * @param data        response data
-     * 
+     *
      * @return response as JSON string
      */
     public String format(ReportResult data) {
@@ -56,8 +49,12 @@ public class KanarekFormatter {
          * args.put(JsonWriter.TYPE, false);
          */
         ObjectMapper mapper = new ObjectMapper();
-        mapper.setDateFormat(new java.text.SimpleDateFormat("dd/MMM/yyyy:kk:mm:ss Z"));
-        mapper.setDefaultPrettyPrinter(new com.fasterxml.jackson.core.util.DefaultPrettyPrinter());
+        mapper.setDateFormat(
+            new java.text.SimpleDateFormat("dd/MMM/yyyy:kk:mm:ss Z")
+        );
+        mapper.setDefaultPrettyPrinter(
+            new com.fasterxml.jackson.core.util.DefaultPrettyPrinter()
+        );
         KanarekDto kdto = new KanarekDto();
         ChannelData cdata;
         // String ownerName = result.getHeaders().getFirst("X-Group-Name");
@@ -101,17 +98,26 @@ public class KanarekFormatter {
                                 kStation.lon = (Double) row.values.get(j);
                                 break;
                             default:
-                                KanarekValue kv = new KanarekValue(channelName, (Double) row.values.get(j),
-                                        row.timestamp);
+                                KanarekValue kv = new KanarekValue(
+                                    channelName,
+                                    (Double) row.values.get(j),
+                                    row.timestamp
+                                );
                                 if (null != kv.type) {
                                     kStation.values.add(kv);
                                 }
                         }
                     }
-                    if (null != kStation.id && null != kStation.lat && null != kStation.lon) {
+                    if (
+                        null != kStation.id &&
+                        null != kStation.lat &&
+                        null != kStation.lon
+                    ) {
                         kdto.stations.add(kStation);
                     } else {
-                        logger.warn("Unable to add Kanarek Station data - requred values not set.");
+                        logger.warn(
+                            "Unable to add Kanarek Station data - requred values not set."
+                        );
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -127,5 +133,4 @@ public class KanarekFormatter {
             return "";
         }
     }
-
 }

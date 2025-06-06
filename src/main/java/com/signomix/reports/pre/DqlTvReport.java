@@ -1,29 +1,20 @@
 package com.signomix.reports.pre;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-
-import org.jboss.logging.Logger;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
-import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.Dataset;
 import com.signomix.common.db.DatasetHeader;
 import com.signomix.common.db.DatasetRow;
 import com.signomix.common.db.Report;
 import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
-
 import io.agroal.api.AgroalDataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import org.jboss.logging.Logger;
 
 public class DqlTvReport extends Report implements ReportIface {
 
@@ -34,25 +25,28 @@ public class DqlTvReport extends Report implements ReportIface {
 
     @Override
     public ReportResult getReportResult(
-            AgroalDataSource olapDs,
-            AgroalDataSource oltpDs,
-            AgroalDataSource logsDs,
-            DataQuery query,
-            Integer organization,
-            Integer tenant,
-            String path,
-            User user) {
-        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user
+    ) {
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportHtml'"
+        );
     }
 
     @Override
     public ReportResult getReportResult(
-            AgroalDataSource olapDs,
-            AgroalDataSource oltpDs,
-            AgroalDataSource logsDs,
-            DataQuery query,
-            User user) {
-
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user
+    ) {
         ReportResult result;
         if (query.getEui() != null) {
             DeviceDto device = getDevice(oltpDs, query.getEui(), user.uid);
@@ -71,9 +65,14 @@ public class DqlTvReport extends Report implements ReportIface {
         return result;
     }
 
-    private ReportResult getDeviceData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
-            AgroalDataSource logsDs, DataQuery query, User user, DeviceDto device) {
-
+    private ReportResult getDeviceData(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        DeviceDto device
+    ) {
         String reportName = DATASET_NAME;
         ReportResult result = new ReportResult();
         result.setQuery("default", query);
@@ -106,8 +105,10 @@ public class DqlTvReport extends Report implements ReportIface {
 
         String sql = getSqlQuery(query, requestedChannelNames[0], user);
         logger.info("SQL query: " + sql);
-        try (Connection conn = olapDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (
+            Connection conn = olapDs.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
             stmt.setString(1, query.getEui());
             int idx = 2;
             if (query.getFromTs() != null) {
@@ -167,15 +168,16 @@ public class DqlTvReport extends Report implements ReportIface {
      * - tag
      * - virtual (won't be supported by this type of report)
      * - sort
-     * 
+     *
      * @param query
      * @param channelColumnNames
      * @return
      */
     private String getSqlQuery(DataQuery query, String columnName, User user) {
-
-        String sql = "SELECT tstamp, textvalues->'" + query.getChannelName()
-                + "' as textvalue FROM analyticdata WHERE eui = ? ";
+        String sql =
+            "SELECT tstamp, textvalues->'" +
+            query.getChannelName() +
+            "' as textvalue FROM analyticdata WHERE eui = ? ";
         if (query.getFromTs() != null) {
             sql += " AND tstamp >= ? ";
             if (query.getToTs() != null) {
@@ -195,17 +197,31 @@ public class DqlTvReport extends Report implements ReportIface {
         return sql;
     }
 
-    private ReportResult getGroupData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
-            AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit) {
-        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
-
+    private ReportResult getGroupData(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        int defaultLimit
+    ) {
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportHtml'"
+        );
     }
 
-    private DeviceDto getDevice(AgroalDataSource oltpDs, String eui, String userId) {
+    private DeviceDto getDevice(
+        AgroalDataSource oltpDs,
+        String eui,
+        String userId
+    ) {
         DeviceDto device = null;
-        String sql = "SELECT eui,name,latitude,longitude,altitude FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
-        try (Connection conn = oltpDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+        String sql =
+            "SELECT eui,name,latitude,longitude,altitude FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        try (
+            Connection conn = oltpDs.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
             stmt.setString(1, eui);
             stmt.setString(2, userId);
             stmt.setString(3, "%," + userId + ",%");
@@ -227,42 +243,113 @@ public class DqlTvReport extends Report implements ReportIface {
     }
 
     @Override
-    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, Integer organization, Integer tenant, String path, User user, Boolean withHeader) {
-        return super.getAsHtml(getReportResult(olapDs, oltpDs, logsDs, query, organization, tenant, path,
-                user), 0, withHeader);
+    public String getReportHtml(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user,
+        Boolean withHeader
+    ) {
+        return super.getAsHtml(
+            getReportResult(
+                olapDs,
+                oltpDs,
+                logsDs,
+                query,
+                organization,
+                tenant,
+                path,
+                user
+            ),
+            0,
+            withHeader
+        );
     }
 
     @Override
-    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, User user, Boolean withHeader) {
-        return super.getAsHtml(getReportResult(olapDs, oltpDs, logsDs, query, user), 0, withHeader);
+    public String getReportHtml(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        Boolean withHeader
+    ) {
+        return super.getAsHtml(
+            getReportResult(olapDs, oltpDs, logsDs, query, user),
+            0,
+            withHeader
+        );
     }
 
     @Override
-    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, Integer organization, Integer tenant, String path, User user) {
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+    public String getReportCsv(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user
+    ) {
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportCsv'"
+        );
     }
 
     @Override
-    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, User user) {
-        ReportResult result = getReportResult(olapDs, oltpDs, logsDs, query, user);
-        return super.getAsCsv(result, 0, "\r\n",
-                ",", true);
+    public String getReportCsv(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user
+    ) {
+        ReportResult result = getReportResult(
+            olapDs,
+            oltpDs,
+            logsDs,
+            query,
+            user
+        );
+        return super.getAsCsv(result, 0, "\r\n", ",", true);
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, User user, String format) {
+    public String getReportFormat(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        String format
+    ) {
         // TODO: Implement this method
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportCsv'"
+        );
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
+    public String getReportFormat(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user,
+        String format
+    ) {
         // TODO: Implement this method
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportCsv'"
+        );
     }
-
 }

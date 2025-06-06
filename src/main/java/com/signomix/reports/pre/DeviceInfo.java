@@ -1,5 +1,12 @@
 package com.signomix.reports.pre;
 
+import com.signomix.common.User;
+import com.signomix.common.db.DataQuery;
+import com.signomix.common.db.Report;
+import com.signomix.common.db.ReportIface;
+import com.signomix.common.db.ReportResult;
+import com.signomix.common.iot.Device;
+import io.agroal.api.AgroalDataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,30 +15,20 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-
-import com.signomix.common.User;
-import com.signomix.common.db.DataQuery;
-import com.signomix.common.db.Report;
-import com.signomix.common.db.ReportIface;
-import com.signomix.common.db.ReportResult;
-import com.signomix.common.iot.Device;
-
-import io.agroal.api.AgroalDataSource;
 
 public class DeviceInfo extends Report implements ReportIface {
 
     @Override
     public ReportResult getReportResult(
-            AgroalDataSource olapDs,
-            AgroalDataSource oltpDs,
-            AgroalDataSource logsDs,
-            DataQuery query,
-            Integer organization,
-            Integer tenant,
-            String path,
-            User user) {
-
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user
+    ) {
         if (!isAuthorized()) {
             return new ReportResult().error(403, "Not authorized");
         }
@@ -43,20 +40,23 @@ public class DeviceInfo extends Report implements ReportIface {
 
     @Override
     public ReportResult getReportResult(
-            AgroalDataSource olapDs,
-            AgroalDataSource oltpDs,
-            AgroalDataSource logsDs,
-            DataQuery query,
-            User user) {
-
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user
+    ) {
         if (!isAuthorized()) {
             return new ReportResult().error(403, "Not authorized");
         }
 
         Device device = new Device();
-        String sql = "SELECT * FROM devices WHERE eui = ? AND ( userid = ? OR team LIKE ? OR administrators LIKE ?)";
-        try (Connection conn = oltpDs.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+        String sql =
+            "SELECT * FROM devices WHERE eui = ? AND ( userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        try (
+            Connection conn = oltpDs.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
             ps.setString(1, query.getEui());
             ps.setString(2, user.uid);
             ps.setString(3, "%," + user.uid + ",%");
@@ -76,38 +76,40 @@ public class DeviceInfo extends Report implements ReportIface {
         }
 
         sql = "SELECT last(ts,ts)FROM devicestatus where eui=?";
-        try (Connection conn = olapDs.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+            Connection conn = olapDs.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
             ps.setString(1, query.getEui());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Timestamp ts = rs.getTimestamp(1);
                     if (ts != null) {
                         device.setLastSeen(ts.getTime());
-                    }else{
+                    } else {
                         device.setLastSeen(0);
                     }
                 }
                 rs.close();
             }
-
         } catch (SQLException e) {
             return new ReportResult().error(500, e.getMessage());
         }
 
         ReportResult result = new ReportResult(query);
         result.contentType = "text/html";
-        String content = """
-                <p>
-                <b>{name}</b><br>
-                EUI: {eui}<br>
-                Typ: {type}<br>
-                Aktywność: {lastSeen}
-                </p>
-                <p>
-                {description}
-                </p>
-                        """;
+        String content =
+            """
+            <p>
+            <b>{name}</b><br>
+            EUI: {eui}<br>
+            Typ: {type}<br>
+            Aktywność: {lastSeen}
+            </p>
+            <p>
+            {description}
+            </p>
+                    """;
         content = content.replace("{eui}", query.getEui());
         try {
             content = content.replace("{name}", device.getName());
@@ -118,7 +120,9 @@ public class DeviceInfo extends Report implements ReportIface {
             content = content.replace("{type}", "Device not found");
             content = content.replace("{description}", "Device not found");
         }
-        ZonedDateTime utc = Instant.ofEpochMilli(device.getLastSeen()).atZone(ZoneOffset.UTC);
+        ZonedDateTime utc = Instant.ofEpochMilli(device.getLastSeen()).atZone(
+            ZoneOffset.UTC
+        );
         content = content.replace("{lastSeen}", utc.toString());
 
         result.content = content;
@@ -126,43 +130,99 @@ public class DeviceInfo extends Report implements ReportIface {
     }
 
     @Override
-    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, Integer organization, Integer tenant, String path, User user, Boolean withHeader) {
+    public String getReportHtml(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user,
+        Boolean withHeader
+    ) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportHtml'"
+        );
     }
 
     @Override
-    public String getReportHtml(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, User user, Boolean withHeader) {
+    public String getReportHtml(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        Boolean withHeader
+    ) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReportHtml'");
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportHtml'"
+        );
     }
 
     @Override
-    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, Integer organization, Integer tenant, String path, User user) {
+    public String getReportCsv(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user
+    ) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportCsv'"
+        );
     }
 
     @Override
-    public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
-            DataQuery query, User user) {
+    public String getReportCsv(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user
+    ) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportCsv'"
+        );
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, User user, String format) {
+    public String getReportFormat(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        User user,
+        String format
+    ) {
         // TODO: Implement this method
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportCsv'"
+        );
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
+    public String getReportFormat(
+        AgroalDataSource olapDs,
+        AgroalDataSource oltpDs,
+        AgroalDataSource logsDs,
+        DataQuery query,
+        Integer organization,
+        Integer tenant,
+        String path,
+        User user,
+        String format
+    ) {
         // TODO: Implement this method
-        throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
+        throw new UnsupportedOperationException(
+            "Unimplemented method 'getReportCsv'"
+        );
     }
-
 }

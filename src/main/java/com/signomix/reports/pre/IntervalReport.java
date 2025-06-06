@@ -17,12 +17,12 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import org.jboss.logging.Logger;
 
 public class IntervalReport extends Report implements ReportIface {
 
     private static final Logger logger = Logger.getLogger(IntervalReport.class);
+    private static final int DEFAULT_ORGANIZATION = 1;
 
     private int defaultLimit = 500;
     private static final String DATASET_NAME = "dataset0";
@@ -77,8 +77,8 @@ public class IntervalReport extends Report implements ReportIface {
 
         ReportResult result;
         if (query.getEui() != null) {
-            DeviceDto device = getDevice(oltpDs, query.getEui(), user.uid);
-            if(device == null){
+            DeviceDto device = getDevice(oltpDs, query.getEui(), user.uid, user.organization);
+            if (device == null) {
                 result = new ReportResult();
                 result.contentType = "application/json";
                 result.error(404, "Device not found");
@@ -156,7 +156,7 @@ public class IntervalReport extends Report implements ReportIface {
         } else {
             // calculate delta
             double delta = 0;
-            for (int i = 0; i < rows0.size()-1; i++) {
+            for (int i = 0; i < rows0.size() - 1; i++) {
                 if (i < rows0.size() - 1) {
                     delta = (double) rows0.get(i).values.get(0) - (double) rows0.get(i + 1).values.get(0);
                 } else {
@@ -313,7 +313,7 @@ public class IntervalReport extends Report implements ReportIface {
         String sql = "SELECT time_bucket('" + interval + "', tstamp) AS ts," + //
                 "  last(" + channelColumnName + ", tstamp) as " + channelColumnName + " " + //
                 "FROM analyticdata " + //
-                "WHERE eui='" + eui + "' AND "+channelColumnName+" IS NOT NULL " + //
+                "WHERE eui='" + eui + "' AND " + channelColumnName + " IS NOT NULL " + //
                 period + //
                 // "AND tstamp > now () - INTERVAL '" + hours + " hours' " + //
                 "GROUP BY eui, ts " + //
@@ -322,15 +322,26 @@ public class IntervalReport extends Report implements ReportIface {
         return sql;
     }
 
-    private DeviceDto getDevice(AgroalDataSource oltpDs, String eui, String userId) {
+    private DeviceDto getDevice(AgroalDataSource oltpDs, String eui, String userId, Long organization) {
         DeviceDto device = null;
-        String sql = "SELECT eui,name,latitude,longitude,altitude FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        String sql = null;
+        if (organization == DEFAULT_ORGANIZATION) {
+            sql = "SELECT eui,name,latitude,longitude,altitude,channels FROM devices WHERE eui = ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        } else {
+            sql = "SELECT eui,name,latitude,longitude,altitude,channels FROM devices WHERE eui = ? AND organization = ?";
+        }
+
         try (Connection conn = oltpDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, eui);
-            stmt.setString(2, userId);
-            stmt.setString(3, "%," + userId + ",%");
-            stmt.setString(4, "%," + userId + ",%");
+            if (organization == DEFAULT_ORGANIZATION) {
+                stmt.setString(2, userId);
+                stmt.setString(3, "%," + userId + ",%");
+                stmt.setString(4, "%," + userId + ",%");
+            } else {
+                stmt.setLong(2, organization);
+            }
+
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     device = new DeviceDto();
@@ -339,9 +350,12 @@ public class IntervalReport extends Report implements ReportIface {
                     device.latitude = rs.getDouble("latitude");
                     device.longitude = rs.getDouble("longitude");
                     device.altitude = rs.getDouble("altitude");
+                    device.channels = rs.getString("channels");
                 }
             }
-        } catch (SQLException ex) {
+        } catch (
+
+        SQLException ex) {
             logger.error("Error getting device: " + ex.getMessage());
         }
         return device;
@@ -371,19 +385,21 @@ public class IntervalReport extends Report implements ReportIface {
     @Override
     public String getReportCsv(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
             DataQuery query, User user) {
-                ReportResult result = getReportResult(olapDs, oltpDs, logsDs, query, user);
-        return super.getAsCsv(result, 0, "\r\n", 
-        ",", true);
+        ReportResult result = getReportResult(olapDs, oltpDs, logsDs, query, user);
+        return super.getAsCsv(result, 0, "\r\n",
+                ",", true);
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, User user, String format) {
+    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, User user, String format) {
         // TODO: Implement this method
         throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
     }
 
     @Override
-    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs, DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
+    public String getReportFormat(AgroalDataSource olapDs, AgroalDataSource oltpDs, AgroalDataSource logsDs,
+            DataQuery query, Integer organization, Integer tenant, String path, User user, String format) {
         // TODO: Implement this method
         throw new UnsupportedOperationException("Unimplemented method 'getReportCsv'");
     }
