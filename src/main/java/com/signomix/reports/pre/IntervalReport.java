@@ -1,16 +1,5 @@
 package com.signomix.reports.pre;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-
-import org.jboss.logging.Logger;
-
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.Dataset;
@@ -19,8 +8,16 @@ import com.signomix.common.db.DatasetRow;
 import com.signomix.common.db.Report;
 import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
-
 import io.agroal.api.AgroalDataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import org.jboss.logging.Logger;
 
 public class IntervalReport extends Report implements ReportIface {
 
@@ -149,8 +146,12 @@ public class IntervalReport extends Report implements ReportIface {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     DatasetRow row = new DatasetRow();
-                    row.timestamp = rs.getTimestamp("ts").getTime();
-                    row.values.add(rs.getDouble(channelColumnName));
+                    row.timestamp = rs.getTimestamp("bucket").getTime();
+                    if(query.isIntervalDeltas()) {
+                        row.values.add(rs.getDouble("delta"));
+                    } else {
+                        row.values.add(rs.getDouble(channelColumnName));
+                    }
                     rows0.add(row);
                 }
             }
@@ -158,34 +159,36 @@ public class IntervalReport extends Report implements ReportIface {
             logger.error("Error getting data: " + ex.getMessage());
             result.error("Error getting data: " + ex.getMessage());
         }
-        if (!query.isIntervalDeltas()) {
+        //if (!query.isIntervalDeltas()) {
             for (int i = 0; i < rows0.size(); i++) {
                 DatasetRow row = new DatasetRow();
                 row.timestamp = rows0.get(i).timestamp;
                 row.values.add((double) rows0.get(i).values.get(0));
                 dataset.data.add(row);
             }
-        } else {
-            // calculate delta
-            double delta = 0;
-            for (int i = 0; i < rows0.size() - 1; i++) {
-                if (i < rows0.size() - 1) {
-                    delta = (double) rows0.get(i).values.get(0) - (double) rows0.get(i + 1).values.get(0);
-                } else {
-                    delta = 0;
-                }
-                DatasetRow row = new DatasetRow();
-                // TODO: implement query.isIntervalTimestampAtEnd() logic
-                if (query.isIntervalTimestampAtEnd()) {
-                    //
-                } else {
-                    //
-                }
-                row.timestamp = rows0.get(i).timestamp;
-                row.values.add(delta);
-                dataset.data.add(row);
-            }
-        }
+        //} else {
+            //// calculate delta
+        //    double delta = 0;
+        //    for (int i = 0; i < rows0.size() - 1; i++) {
+        //         if (i < rows0.size() - 1) {
+        //             delta = (double) rows0.get(i).values.get(0) - (double) rows0.get(i + 1).values.get(0);
+        //         } else {
+        //             delta = 0;
+        //         }
+        //         DatasetRow row = new DatasetRow();
+        //         // TODO: implement query.isIntervalTimestampAtEnd() logic
+        //         if (query.isIntervalTimestampAtEnd()) {
+        //             //
+        //         } else {
+        //             //
+        //         }
+        //         row.timestamp = rows0.get(i).timestamp;
+        //         row.values.add(delta);
+        //         dataset.data.add(row);
+        //     }
+        // }
+
+
         // logger.info("Multiplier channel name: " + query.getMultiplierChannelName());
         /*
          * if (query.getMultiplierChannelName() != null &&
@@ -441,7 +444,10 @@ public class IntervalReport extends Report implements ReportIface {
 
     private String getSqlQuery(DataQuery query,
             HashMap<String, String> channelColumnNames) {
-        // TODO: implement query.getChannels() logic
+        // There are two types of queries:
+        // 1. Interval query with deltas (query.isIntervalDeltas() == true)
+        // 2. Interval query without deltas (query.isIntervalDeltas() == false)
+        // Each case can use gapfill or not, depending on the query.isGapfill() value.
         String interval;
         if (query.isInterval()) {
             interval = query.getInterval();
@@ -456,39 +462,63 @@ public class IntervalReport extends Report implements ReportIface {
 
         String period;
         int numberOfSamples = query.getLimit();
-        if (query.isIntervalDeltas()) {
-            numberOfSamples++;
-        }
+        // if (query.isIntervalDeltas()) {
+        //     numberOfSamples++;
+        // }
         if (query.getFromTs() != null && query.getToTs() != null) {
             // deltas are not supported in this case
             // TODO: to support deltas in this case, we need to subtract one interval from
             // query.getFromTs()
-            period = "AND tstamp > '" + query.getFromTs() + "' AND tstamp < '" + query.getToTs() + "' ";
+            period = " AND tstamp >= '" + query.getFromTs() + "' AND tstamp <= '" + query.getToTs() + "' ";
         } else {
-            period = "AND tstamp > now () - INTERVAL '" + numberOfSamples + " " + query.getIntervalName() + "' "
-                    + "AND tstamp < now() ";
+            period = " AND tstamp >= now () - INTERVAL '" + numberOfSamples + " " + query.getIntervalName() + "' "
+                    + "AND tstamp <= now() ";
         }
-        String sql;
 
-        if (!isMultiplier) {
-            sql = "SELECT time_bucket('" + interval + "', tstamp) AS ts," + //
+        String sql;
+        if (isMultiplier || query.isGapfill() || query.isIntervalDeltas()) {
+            if(isMultiplier){
+                /*
+SELECT a.bucket, a.delta * b.v2 AS result
+FROM (
+    SELECT bucket, value - LAG(value) OVER (ORDER BY bucket) AS delta
+    FROM (
+        SELECT 
+            time_bucket_gapfill('1 day', tstamp) AS bucket, locf(last(d1, tstamp)) AS value
+        FROM analyticdata
+        WHERE tstamp >= '2025-05-20' AND tstamp <= '2025-06-10' AND eui='ORGTEST1'
+        GROUP BY bucket
+    ) sub_a
+) a
+JOIN (
+    SELECT bucket, locf(last(d1, tstamp)) AS v2
+    FROM analyticdata
+    WHERE tstamp >= '2025-05-20' AND tstamp <= '2025-06-10' AND eui='MP'
+    GROUP BY bucket
+) b
+ON a.bucket = b.bucket
+ORDER BY a.bucket;
+                 */
+            }else{
+            sql = "SELECT bucket,value as "+ channelColumnName +",value - LAG(value) OVER (ORDER BY bucket) AS delta " + //
+                    "FROM (" +
+                    "    SELECT time_bucket_gapfill('" + interval + "', tstamp) AS bucket, locf(last(" + channelColumnName + ", tstamp)) AS value" + //
+                    "    FROM analyticdata" + //
+                    "    WHERE eui='ORGTEST1'" + //
+                    period +
+                    "    GROUP BY bucket" + //
+                    ") sub ORDER BY bucket";
+            }
+        } else {
+            sql = "SELECT time_bucket('" + interval + "', tstamp) AS bucket," + //
                     "  last(" + channelColumnName + ", tstamp) as " + channelColumnName + " " + //
                     "FROM analyticdata " + //
                     "WHERE eui='" + eui + "' AND " + channelColumnName + " IS NOT NULL " + //
                     // "WHERE eui='" + eui + "' " + //
                     period + //
-                    "GROUP BY eui, ts " + //
-                    "ORDER BY ts DESC;";
-        } else {
-            sql = "SELECT time_bucket_gapfill('" + interval + "', tstamp) AS ts," + //
-                    "  locf(last(" + channelColumnName + ", tstamp)) as " + channelColumnName + " " + //
-                    "FROM analyticdata " + //
-                    "WHERE eui='" + eui + "' " + //
-                    period + //
-                    "GROUP BY eui, ts " + //
-                    "ORDER BY ts DESC;";
+                    "GROUP BY eui, bucket " + //
+                    "ORDER BY bucket DESC;";
         }
-
         return sql;
     }
 
@@ -527,7 +557,7 @@ public class IntervalReport extends Report implements ReportIface {
                 "FROM analyticdata " + //
                 "WHERE eui=? " + //
                 "AND tstamp>=? " + // use fromTs to get only data after the first multiplier value timestamp
-                "AND tstamp<? " + // use toTs to get only data before the last multiplier value timestamp
+                "AND tstamp<=? " + // use toTs to get only data before the last multiplier value timestamp
                 "GROUP BY eui, ts " + //
                 "ORDER BY ts DESC;";
 
