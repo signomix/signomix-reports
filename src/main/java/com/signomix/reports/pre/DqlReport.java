@@ -350,10 +350,14 @@ public class DqlReport extends Report implements ReportIface {
 
         String columnName;
         String columns;
+        String timeZone=query.getZone();
+        if(null==timeZone){
+            timeZone="UTC";
+        }
         if (query.isSkipNull()) {
-            columns = "last(tstamp, tstamp) AS tstamp,";
+            columns = "last(tstamp, tstamp) AT TIME ZONE '" + timeZone + "' AS tstamp,";
         } else {
-            columns = "tstamp,";
+            columns = "tstamp AT TIME ZONE '" + timeZone + "' AS tstamp,";
         }
         for (String channel : channelColumnNames.keySet()) {
             columnName = channelColumnNames.get(channel);
