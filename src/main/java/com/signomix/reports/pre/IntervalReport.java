@@ -1,14 +1,5 @@
 package com.signomix.reports.pre;
 
-import com.signomix.common.User;
-import com.signomix.common.db.DataQuery;
-import com.signomix.common.db.Dataset;
-import com.signomix.common.db.DatasetHeader;
-import com.signomix.common.db.DatasetRow;
-import com.signomix.common.db.Report;
-import com.signomix.common.db.ReportIface;
-import com.signomix.common.db.ReportResult;
-import io.agroal.api.AgroalDataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,7 +8,19 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+
 import org.jboss.logging.Logger;
+
+import com.signomix.common.User;
+import com.signomix.common.db.DataQuery;
+import com.signomix.common.db.Dataset;
+import com.signomix.common.db.DatasetHeader;
+import com.signomix.common.db.DatasetRow;
+import com.signomix.common.db.Report;
+import com.signomix.common.db.ReportIface;
+import com.signomix.common.db.ReportResult;
+
+import io.agroal.api.AgroalDataSource;
 
 public class IntervalReport extends Report implements ReportIface {
 
@@ -118,6 +121,7 @@ public class IntervalReport extends Report implements ReportIface {
         result.addDatasetHeader(header);
 
         // get data
+        String zone = query.getZone();
         HashMap<String, String> channelColumnNames;
         try {
             channelColumnNames = getChannelColumnNames(query, oltpDs);
@@ -134,10 +138,10 @@ public class IntervalReport extends Report implements ReportIface {
         }
         String sql = getSqlQuery(query, channelColumnNames, multiplierChannelColumnNames);
         ArrayList<DatasetRow> rows0 = new ArrayList<>(); // 1 row more to calculate delta
-        //logger.info("SQL query: " + sql);
+        //logger.info("Time zone: " + zone);
         String channelColumnName = channelColumnNames.get(channelName);
         try (Connection conn = olapDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql);) {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     DatasetRow row = new DatasetRow();
@@ -151,6 +155,7 @@ public class IntervalReport extends Report implements ReportIface {
                 }
             }
         } catch (SQLException ex) {
+            ex.printStackTrace();
             logger.error("Error getting data: " + ex.getMessage());
             result.error("Error getting data: " + ex.getMessage());
         }
@@ -167,51 +172,13 @@ public class IntervalReport extends Report implements ReportIface {
     }
 
     /**
-     * Creates a SQL query to get data from the database.
-     * The query is created based on the given DataQuery object.
-     * Supported query parameters:
-     * - eui
-     * - group
-     * - channel (from channelColumnNames parameter, not DQL channel keyword )
-     * - last
-     * - from
-     * - to
-     * - project
-     * - notnull
-     * - ascending
-     * - descending
-     * Not supported:
-     * - sback
-     * - minimum
-     * - maximum
-     * - average
-     * - sum
-     * - new
-     * - state
-     * - tag
-     * - virtual (won't be supported by this type of report)
-     * - sort
-     * 
-     * @param query
-     * @param useDefaultLimit
-     * @param channelColumnNames
-     * @return
+     * Get channel names for the device.
+     *
+     * @param query  DataQuery object containing the device EUI and channel names
+     * @param oltpDs AgroalDataSource for OLTP database connection
+     * @return HashMap with channel names as keys and column names as values
+     * @throws Exception if no channel name is specified or if no channel definition is found for the device
      */
-    /*
-     * private String getSqlQuery(int hours) {
-     * 
-     * String sql = "SELECT time_bucket('1 hour', tstamp) AS ts," + //
-     * "  last(d1, tstamp) as d1 " + //
-     * "FROM analyticdata " + //
-     * "WHERE eui='0018B240000068D4' AND tstamp > now () - INTERVAL '" + hours +
-     * " hours' " + //
-     * "GROUP BY eui, ts " + //
-     * "ORDER BY ts DESC;";
-     * 
-     * return sql;
-     * }
-     */
-
     private HashMap<String, String> getChannelColumnNames(DataQuery query, AgroalDataSource oltpDs) throws Exception {
         HashMap<String, String> channelColumnNames = new HashMap<>();
         String[] channelNames = {};
@@ -323,49 +290,6 @@ public class IntervalReport extends Report implements ReportIface {
         return channelColumnNames;
     }
 
-    /*
-     * private Timestamp findFirstMultiplierValueTimestamp(
-     * AgroalDataSource olapDs, DataQuery query, String multiplierChannelColumnName)
-     * {
-     * Timestamp firstTimestamp = null;
-     * String periodCondition;
-     * String sql =
-     * "SELECT last(tstamp,tstamp) as tstamp FROM analyticdata WHERE eui = ? AND ";
-     * Timestamp fromTs = query.getFromTs();
-     * String interval = query.getInterval();
-     * if (!(fromTs != null || (interval != null && query.getLimit() > 0))) {
-     * // error, no fromTs or interval specified
-     * }
-     * if (fromTs != null) {
-     * periodCondition = "tstamp <= ?";
-     * } else {
-     * periodCondition = "tstamp <= now () - ?*INTERVAL '1 " +
-     * query.getIntervalName() + "'";
-     * }
-     * sql += periodCondition;
-     * logger.info("SQL query to find first multiplier value timestamp: " + sql);
-     * try (Connection conn = olapDs.getConnection();
-     * PreparedStatement stmt = conn.prepareStatement(sql)) {
-     * stmt.setString(1, query.getMultiplierDeviceEui());
-     * if (fromTs != null) {
-     * stmt.setTimestamp(2, fromTs);
-     * } else {
-     * stmt.setInt(2, query.getLimit());
-     * }
-     * try (ResultSet rs = stmt.executeQuery()) {
-     * if (rs.next()) {
-     * firstTimestamp = rs.getTimestamp("tstamp");
-     * }
-     * }
-     * } catch (SQLException ex) {
-     * ex.printStackTrace();
-     * logger.error("Error getting first multiplier value timestamp: " +
-     * ex.getMessage());
-     * }
-     * return firstTimestamp;
-     * }
-     */
-
     private String getSqlQuery(DataQuery query,
             HashMap<String, String> channelColumnNames, HashMap<String, String> multiplierChannelColumnNames) {
         // There are two types of queries:
@@ -378,6 +302,10 @@ public class IntervalReport extends Report implements ReportIface {
         } else {
             interval = "1 hour";
         }
+        String zone = "UTC"; // TODO: use device timezone if available
+        if (query.getZone() != null && !query.getZone().isEmpty()) {
+            zone = query.getZone();
+        }
         String eui = query.getEui();
         String[] channelNames = query.getChannelName().split(",");
         String channelColumnName = channelColumnNames.get(channelNames[0]); // only first channel is supported
@@ -389,13 +317,8 @@ public class IntervalReport extends Report implements ReportIface {
         String multiplierChannelColumnName = multiplierChannelColumnNames.get(query.getMultiplierChannelName());
         String multiplierEui = query.getMultiplierDeviceEui();
         int numberOfSamples = query.getLimit();
-        // if (query.isIntervalDeltas()) {
-        // numberOfSamples++;
-        // }
+
         if (query.getFromTs() != null && query.getToTs() != null) {
-            // deltas are not supported in this case
-            // TODO: to support deltas in this case, we need to subtract one interval from
-            // query.getFromTs()
             period = " AND tstamp >= '" + query.getFromTs() + "' AND tstamp <= '" + query.getToTs() + "' ";
             multiplierPeriod = " AND tstamp >= '" + query.getFromTs() + "'::timestamp - INTERVAL '40 day' " +
                     " AND tstamp <= '" + query.getToTs() + "' ";
@@ -407,17 +330,17 @@ public class IntervalReport extends Report implements ReportIface {
                     + "AND tstamp <= now() ";
         }
 
-        String sql;
+        String sql="";
         if (isMultiplier || query.isGapfill() || query.isIntervalDeltas()) {
             if (isMultiplier) {
 
-                sql = "SELECT a.bucket, a.delta * b.v2 AS " + channelColumnName + ", a.delta * b.v2 AS delta" + //
+                sql += "SELECT a.bucket, a.delta * b.v2 AS " + channelColumnName + ", a.delta * b.v2 AS delta" + //
                         " FROM (" +
                         "    SELECT bucket, value - LAG(value) OVER (ORDER BY bucket) AS delta " + //
                         "    FROM (" +
                         "        SELECT " +
-                        "            time_bucket_gapfill('" + interval + "', tstamp) AS bucket, locf(last("
-                        + channelColumnName + ", tstamp)) AS value" + //
+                        "            time_bucket_gapfill('" + interval + "', tstamp, '"+zone+"') AS bucket, locf(last("
+                        + channelColumnName + ", tstamp AT TIME ZONE '"+zone+"')) AS value" + //
                         "        FROM analyticdata" + //
                         "        WHERE eui='" + eui + "' " +
                         period +
@@ -425,77 +348,39 @@ public class IntervalReport extends Report implements ReportIface {
                         "    ) sub_a" + //
                         ") a " + //
                         " JOIN (" +
-                        "    SELECT time_bucket_gapfill('" + interval + "', tstamp) AS bucket, locf(last("
-                        + multiplierChannelColumnName + ", tstamp)) AS v2" + //
+                        "    SELECT time_bucket_gapfill('" + interval + "', tstamp, '"+zone+"') AS bucket, locf(last("
+                        + multiplierChannelColumnName + ", tstamp AT TIME ZONE '"+zone+"')) AS v2" + //
                         "    FROM analyticdata" + //
                         "    WHERE eui='" + multiplierEui + "'" + //
                         multiplierPeriod +
                         "    GROUP BY bucket" + //
                         ") b " + //
                         "ON a.bucket = b.bucket " + //
-                        "ORDER BY a.bucket DESC";
+                        "ORDER BY a.bucket DESC;";
             } else {
-                sql = "SELECT bucket,value as " + channelColumnName
+                sql += "SELECT bucket,value as " + channelColumnName
                         + ",value - LAG(value) OVER (ORDER BY bucket) AS delta " + //
                         "FROM (" +
-                        "    SELECT time_bucket_gapfill('" + interval + "', tstamp) AS bucket, locf(last("
-                        + channelColumnName + ", tstamp)) AS value" + //
+                        "    SELECT time_bucket_gapfill('" + interval + "', tstamp, '"+zone+"') AS bucket, locf(last("
+                        + channelColumnName + ", tstamp AT TIME ZONE '"+zone+"')) AS value" + //
                         "    FROM analyticdata" + //
                         "    WHERE eui='" + eui + "'" + //
                         period +
                         "    GROUP BY bucket" + //
-                        ") sub ORDER BY bucket DESC";
+                        ") sub ORDER BY bucket DESC;";
             }
         } else {
-            sql = "SELECT time_bucket('" + interval + "', tstamp) AS bucket," + //
-                    "  last(" + channelColumnName + ", tstamp) as " + channelColumnName + " " + //
+            sql += "SELECT time_bucket('" + interval + "', tstamp, '"+zone+"') AS bucket," + //
+                    "  last(" + channelColumnName + ", tstamp AT TIME ZONE '"+zone+"') as " + channelColumnName + " " + //
                     "FROM analyticdata " + //
                     "WHERE eui='" + eui + "' AND " + channelColumnName + " IS NOT NULL " + //
                     period + //
                     "GROUP BY eui, bucket " + //
                     "ORDER BY bucket DESC;";
         }
+        //logger.info("SQL query: " + sql);
         return sql;
     }
-
-    /*
-     * private String getSqlQuery4Multiplier(DataQuery query,
-     * HashMap<String, String> multiplierChannelColumnNames) throws Exception {
-     * String interval;
-     * if (query.isInterval()) {
-     * interval = query.getInterval();
-     * } else {
-     * interval = "1 hour";
-     * }
-     * String multiplierChannelColumnName = null;
-     * String multiplierChannelName = query.getMultiplierChannelName();
-     * logger.info("Multiplier channel name (1): " + multiplierChannelName);
-     * logger.info("Multiplier channel column names size: " +
-     * multiplierChannelColumnNames.size());
-     * if (multiplierChannelName != null) {
-     * multiplierChannelColumnName =
-     * multiplierChannelColumnNames.get(multiplierChannelName);
-     * }
-     * if (multiplierChannelColumnName == null) {
-     * throw new Exception("No multiplier channel name specified");
-     * }
-     * 
-     * String sql = "SELECT time_bucket_gapfill('" + interval + "', tstamp) AS ts,"
-     * + //
-     * "  locf(last(" + multiplierChannelColumnName + ", tstamp)) as " +
-     * multiplierChannelColumnName + " " + //
-     * "FROM analyticdata " + //
-     * "WHERE eui=? " + //
-     * "AND tstamp>=? " + // use fromTs to get only data after the first multiplier
-     * value timestamp
-     * "AND tstamp<=? " + // use toTs to get only data before the last multiplier
-     * value timestamp
-     * "GROUP BY eui, ts " + //
-     * "ORDER BY ts DESC;";
-     * 
-     * return sql;
-     * }
-     */
 
     private DeviceDto getDevice(AgroalDataSource oltpDs, String eui, String userId, Long organization) {
         DeviceDto device = null;
