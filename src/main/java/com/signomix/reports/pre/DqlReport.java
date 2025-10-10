@@ -166,6 +166,7 @@ public class DqlReport extends Report implements ReportIface {
         for (String channel : requestedChannelNames) {
             channelNamesSet.add(channel);
         }
+        ArrayList<String> verifiedChannelNames = new ArrayList<>();
         HashSet<String> deviceChannelNamesSet = new HashSet<>();
         String sql = "SELECT channels FROM devicechannels WHERE eui = ?";
         try (Connection conn = oltpDs.getConnection();
@@ -181,7 +182,10 @@ public class DqlReport extends Report implements ReportIface {
                         }
                         for (int i = 0; i < channelNames.length; i++) {
                             if (channelNamesSet.contains(channelNames[i])) {
-                                channelColumnNames.put(channelNames[i], "d" + (i + 1));
+                                if (i < 24) { // max 24 channels supported
+                                    channelColumnNames.put(channelNames[i], "d" + (i + 1));
+                                    verifiedChannelNames.add(channelNames[i]);
+                                }
                             }
                         }
                     }
@@ -192,16 +196,19 @@ public class DqlReport extends Report implements ReportIface {
                     if (channelNamesSet.contains("latitude")) {
                         if (!deviceChannelNamesSet.contains("latitude")) {
                             channelColumnNames.put("latitude", "latitude");
+                            verifiedChannelNames.add("latitude");
                         }
                     }
                     if (channelNamesSet.contains("longitude")) {
                         if (!deviceChannelNamesSet.contains("longitude")) {
                             channelColumnNames.put("longitude", "longitude");
+                            verifiedChannelNames.add("longitude");
                         }
                     }
                     if (channelNamesSet.contains("altitude")) {
                         if (!deviceChannelNamesSet.contains("altitude")) {
                             channelColumnNames.put("altitude", "altitude");
+                            verifiedChannelNames.add("altitude");
                         }
                     }
                 } else {
@@ -215,8 +222,13 @@ public class DqlReport extends Report implements ReportIface {
         }
 
         DatasetHeader header = new DatasetHeader(query.getEui());
-        for (int i = 0; i < requestedChannelNames.length; i++) {
-            header.columns.add(requestedChannelNames[i]);
+        /*
+         * for (int i = 0; i < requestedChannelNames.length; i++) {
+         * header.columns.add(requestedChannelNames[i]);
+         * }
+         */
+        for (int i = 0; i < verifiedChannelNames.size(); i++) {
+            header.columns.add(verifiedChannelNames.get(i));
         }
         result.addDatasetHeader(header);
 
@@ -253,7 +265,7 @@ public class DqlReport extends Report implements ReportIface {
                             columnName = channelColumnNames.get(requestedChannelNames[i]);
                             // if the column name starts with "d", it is a data channel
                             // otherwise it is a device configuration parameter
-                            if (columnName!=null && columnName.startsWith("d")) {
+                            if (columnName != null && columnName.startsWith("d")) {
                                 value = rs.getDouble(columnName);
                                 // value = rs.getDouble(channelColumnNames.get(requestedChannelNames[i]));
                                 if (rs.wasNull()) {
@@ -346,13 +358,14 @@ public class DqlReport extends Report implements ReportIface {
      * @param channelColumnNames
      * @return
      */
-    private String getSqlQuery(DataQuery query, HashMap<String, String> channelColumnNames, User user, boolean withStatus) {
+    private String getSqlQuery(DataQuery query, HashMap<String, String> channelColumnNames, User user,
+            boolean withStatus) {
 
         String columnName;
         String columns;
-        String timeZone=query.getZone();
-        if(null==timeZone){
-            timeZone="UTC";
+        String timeZone = query.getZone();
+        if (null == timeZone) {
+            timeZone = "UTC";
         }
         if (query.isSkipNull()) {
             columns = "last(tstamp, tstamp) AT TIME ZONE '" + timeZone + "' AS tstamp,";
@@ -371,10 +384,10 @@ public class DqlReport extends Report implements ReportIface {
             }
         }
         columns = columns.substring(0, columns.length() - 1);
-        if(withStatus) {
+        if (withStatus) {
             columns += "," + getDeviceStatusPart();
         }
-        
+
         String notNullCondition;
 
         if (query.isNotNull() && channelColumnNames.size() > 0) {
@@ -512,12 +525,14 @@ public class DqlReport extends Report implements ReportIface {
             AgroalDataSource logsDs, User user) {
         List<DeviceDto> devices = new ArrayList<>();
         String sql;
-        if(user.organization == DEFAULT_ORGANIZATION) {
+        if (user.organization == DEFAULT_ORGANIZATION) {
             sql = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
-        } else {    
+        } else {
             sql = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND organization = ?";
         }
-        // = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators LIKE ?)";
+        // = "SELECT eui,name,latitude,longitude,altitude,configuration,channels FROM
+        // devices WHERE groups LIKE ? AND (userid = ? OR team LIKE ? OR administrators
+        // LIKE ?)";
         try (Connection conn = oltpDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             if (user.organization == DEFAULT_ORGANIZATION) {

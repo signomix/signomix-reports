@@ -186,10 +186,13 @@ public class GroupReport extends Report implements ReportIface {
                 }
                 // result.addDatasetHeader(header);
                 HashMap<String, Object> config;
+                String eui;
+                Double value;
                 while (rs.next()) {
                     result.addDatasetHeader(header);
-                    dataset = new Dataset(rs.getString("eui"));
-                    dataset.eui = rs.getString("eui");
+                    eui = rs.getString("eui");
+                    dataset = new Dataset(eui);
+                    dataset.eui = eui;
                     try {
                         dataset.name = rs.getString("cfg_name");
                     } catch (SQLException e) {
@@ -197,9 +200,15 @@ public class GroupReport extends Report implements ReportIface {
                     }
                     DatasetRow row = new DatasetRow();
                     row.timestamp = rs.getTimestamp("tstamp").getTime();
-                    // row.values.add(rs.getString("eui"));
+                    // latitude, longitude, altitude are rs columns number 4, 5, 6
                     for (int i = 0; i < channelNames.size(); i++) {
-                        row.values.add(rs.getDouble("d" + (i + 1)));
+                        //row.values.add(rs.getDouble("d" + (i + 1)));
+                        value = rs.getDouble(i + 7);
+                        if (rs.wasNull()) {
+                            row.values.add(null);
+                        } else {
+                            row.values.add(value);  
+                        }
                     }
                     dataset.data.add(row);
                     dataset.size = 1L;
