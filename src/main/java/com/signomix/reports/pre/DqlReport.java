@@ -33,6 +33,7 @@ public class DqlReport extends Report implements ReportIface {
     private static final String QUERY_NAME = "default";
 
     private static final int DEFAULT_ORGANIZATION = 1;
+    //private static final int MAX_CHANNELS = 24;
 
     @Override
     public ReportResult getReportResult(
@@ -177,12 +178,15 @@ public class DqlReport extends Report implements ReportIface {
                     String channels = rs.getString(1);
                     if (channels != null) {
                         channelNames = channels.split(","); // channels names declared in the device
-                        for (String channel : channelNames) {
-                            deviceChannelNamesSet.add(channel);
+                        for (int i = 0; i < channelNames.length; i++) {
+                            if(i>=MAX_CHANNELS){
+                                break;
+                            }
+                            deviceChannelNamesSet.add(channelNames[i]);
                         }
                         for (int i = 0; i < channelNames.length; i++) {
                             if (channelNamesSet.contains(channelNames[i])) {
-                                if (i < 24) { // max 24 channels supported
+                                if (i < MAX_CHANNELS) { // max number of channels supported
                                     channelColumnNames.put(channelNames[i], "d" + (i + 1));
                                     verifiedChannelNames.add(channelNames[i]);
                                 }

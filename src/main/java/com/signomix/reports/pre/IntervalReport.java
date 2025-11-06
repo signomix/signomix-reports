@@ -210,6 +210,9 @@ public class IntervalReport extends Report implements ReportIface {
                             deviceChannelNamesSet.add(channel);
                         }
                         for (int i = 0; i < channelNames.length; i++) {
+                            if(i>=MAX_CHANNELS){
+                                break;
+                            }
                             if (channelNamesSet.contains(channelNames[i])) {
                                 channelColumnNames.put(channelNames[i], "d" + (i + 1));
                             }
@@ -276,6 +279,9 @@ public class IntervalReport extends Report implements ReportIface {
                     if (channels != null) {
                         channelNames = channels.split(","); // channels names declared in the device
                         for (int i = 0; i < channelNames.length; i++) {
+                            if(i>=MAX_CHANNELS){
+                                break;
+                            }
                             channelColumnNames.put(channelNames[i], "d" + (i + 1));
                         }
                     }

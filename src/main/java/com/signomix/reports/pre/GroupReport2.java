@@ -23,9 +23,9 @@ import com.signomix.common.db.ReportResult;
 
 import io.agroal.api.AgroalDataSource;
 
-public class GroupReport extends Report implements ReportIface {
+public class GroupReport2 extends Report implements ReportIface {
 
-    private static final Logger logger = Logger.getLogger(GroupReport.class);
+    private static final Logger logger = Logger.getLogger(GroupReport2.class);
 
     private static final String DATASET_NAME = "dataset0";
     private static final String QUERY_NAME = "default";
@@ -99,49 +99,6 @@ public class GroupReport extends Report implements ReportIface {
     private ReportResult getGroupData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit) {
 
-        /*
-         * SELECT DISTINCT ON (eui)
-         * eui,tstamp,d1,d2,d3,d4,d5,d6,d7,d8,d9,d10,
-         * d11,d12,d13,d14,d15,d16,d17,d18,d19,d20,
-         * d21,d22,d23,d24
-         * FROM
-         * analyticdata
-         * WHERE eui IN (SELECT eui from devices WHERE groups LIKE '%,?,%')
-         * ORDER BY
-         * eui,
-         * tstamp DESC;
-         * 
-         * SELECT DISTINCT ON (eui)
-         * last(eui,tstamp),last(tstamp,tstamp),
-         * last(d1,tstamp),last(d2,tstamp),last(d3,tstamp)
-         * FROM
-         * analyticdata
-         * WHERE eui IN (SELECT eui from devices WHERE groups LIKE '%,DKHSROOMS,%')
-         * ORDER BY
-         * eui,
-         * tstamp DESC;
-         * 
-         * SELECT DISTINCT ON (eui)
-         * last(eui,tstamp),last(tstamp,tstamp),
-         * last(d1,tstamp),last(d2,tstamp),last(d3,tstamp)
-         * FROM
-         * analyticdata
-         * WHERE eui IN (SELECT eui from devices)
-         * ORDER BY
-         * eui,
-         * tstamp DESC;
-         * 
-         * SELECT
-         * last(eui,tstamp),last(tstamp,tstamp),
-         * last(d1,tstamp) FILTER (WHERE d1 IS NOT NULL) AS d1,
-         * last(d2,tstamp) FILTER (WHERE d2 IS NOT NULL) AS d2,
-         * last(d3,tstamp) FILTER (WHERE d3 IS NOT NULL) AS d3
-         * FROM
-         * analyticdata
-         * WHERE eui IN (SELECT eui from devices WHERE groups LIKE '%,DKHS_ROOMS,%')
-         * GROUP BY eui LIMIT 100
-         */
-
         List<String> channelNames = getGroupChannels(oltpDs, query.getGroup(), user);
         if (channelNames.isEmpty()) {
             logger.warn("No channels found for group: " + query.getGroup());
@@ -150,8 +107,9 @@ public class GroupReport extends Report implements ReportIface {
             result.error("No channels found for group: " + query.getGroup());
             return result;
         }
+
         String sql = "SELECT last(a.eui,a.tstamp) AS eui,last(a.tstamp,a.tstamp) AS tstamp,"
-        + "d.name as cfg_name,d.latitude as cfg_latitude,d.longitude as cfg_longitude,d.altitude as cfg_altitude,";
+        + "d.name as cfg_name,";
         for (int i = 0; i < channelNames.size(); i++) {
             sql += "last(a.d" + (i + 1) + ",a.tstamp) FILTER (WHERE a.d" + (i + 1) + " IS NOT NULL) AS d" + (i + 1);
             if (i < channelNames.size() - 1) {
@@ -160,8 +118,21 @@ public class GroupReport extends Report implements ReportIface {
         }
         sql += " FROM analyticdata a";
         sql += " JOIN devices d ON d.eui = a.eui";
-        sql += " WHERE a.eui IN (SELECT eui FROM devices WHERE groups LIKE ?)";
-        sql += " GROUP BY a.eui, d.name, d.latitude, d.longitude, d.altitude";
+        sql += " WHERE a.eui IN (";
+        
+        sql+= """
+            SELECT d.eui 
+            FROM 
+            devices d 
+            JOIN 
+            device_tags dt ON d.eui = dt.eui 
+            WHERE 
+            d.organization = 158 
+            AND dt.tag_name = 'type' 
+            AND dt.tag_value = 'room' 
+                """;
+        sql += ")";
+        sql += " GROUP BY a.eui, d.name";
 
         ReportResult result = new ReportResult();
         result.setQuery("default", query);
@@ -173,7 +144,7 @@ public class GroupReport extends Report implements ReportIface {
 
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, "%," + query.getGroup() + ",%");
+            //stmt.setString(1, "%," + query.getGroup() + ",%");
             try (ResultSet rs = stmt.executeQuery()) {
                 Dataset dataset = new Dataset(query.getGroup());
                 dataset.name = DATASET_NAME;
@@ -202,12 +173,12 @@ public class GroupReport extends Report implements ReportIface {
                     row.timestamp = rs.getTimestamp("tstamp").getTime();
                     // latitude, longitude, altitude are rs columns number 4, 5, 6
                     for (int i = 0; i < channelNames.size(); i++) {
-                        //row.values.add(rs.getDouble("d" + (i + 1)));
-                        value = rs.getDouble(i + 7);
+                        // row.values.add(rs.getDouble("d" + (i + 1)));
+                        value = rs.getDouble(i + 4);
                         if (rs.wasNull()) {
                             row.values.add(null);
                         } else {
-                            row.values.add(value);  
+                            row.values.add(value);
                         }
                     }
                     dataset.data.add(row);
@@ -215,12 +186,12 @@ public class GroupReport extends Report implements ReportIface {
                     result.addDataset(dataset);
                     config = new HashMap<>();
                     config.put("name", dataset.name);
-                    try {
+                    /* try {
                         config.put("latitude", rs.getDouble("cfg_latitude"));
                         config.put("longitude", rs.getDouble("cfg_longitude"));
                         config.put("altitude", rs.getDouble("cfg_altitude"));
                     } catch (SQLException e) {
-                    }
+                    } */
                     result.configs.put(dataset.eui, config);
                 }
             }
@@ -257,7 +228,11 @@ public class GroupReport extends Report implements ReportIface {
                     String channelsStr = rs.getString("channels");
                     if (channelsStr != null) {
                         String[] channelArray = channelsStr.split(",");
-                        for (String channel : channelArray) {
+                        for (int i = 0; i < channelArray.length; i++) {
+                            if (i >= MAX_CHANNELS) {
+                                break;
+                            }
+                            String channel = channelArray[i];
                             if (channel != null && !channel.trim().isEmpty()) {
                                 channels.add(channel);
                             }

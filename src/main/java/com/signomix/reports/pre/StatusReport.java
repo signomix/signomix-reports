@@ -146,21 +146,29 @@ public class StatusReport extends Report implements ReportIface {
         result.addDatasetHeader(header);
 
         // get data
-        String sql = getSqlQuery(query);
+        boolean intervalOnly = false;
+        if (query.getChannelName() != null && query.getChannelName().equalsIgnoreCase("interval")) {
+            intervalOnly = true;
+        }
+        String sql = getSqlQuery(query, intervalOnly);
         logger.debug("SQL query: " + sql);
         try (
                 Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, query.getEui());
-            stmt.setInt(
-                    2,
-                    query.getLimit() > 0 ? query.getLimit() : defaultLimit);
+            if (intervalOnly) {
+                stmt.setString(1, query.getEui());
+            } else {
+                stmt.setString(1, query.getEui());
+                stmt.setInt(
+                        2,
+                        query.getLimit() > 0 ? query.getLimit() : defaultLimit);
+            }
             try (ResultSet rs = stmt.executeQuery()) {
                 double value;
                 while (rs.next()) {
-                    try{
+                    try {
                         dataset.name = rs.getString("name");
-                    }catch (Exception e) {
+                    } catch (Exception e) {
                         logger.warn("Error getting device name: " + e.getMessage());
                         dataset.name = device.name;
                     }
@@ -229,19 +237,28 @@ public class StatusReport extends Report implements ReportIface {
      * @param channelColumnNames
      * @return
      */
-    private String getSqlQuery(DataQuery query) {
+    private String getSqlQuery(DataQuery query, boolean intervalOnly) {
         String sql;
         if (query.getGroup() != null) {
             // sql = "SELECT eui, last(status,ts) as status, last(alert,ts) as alert,
             // last(ts,ts) as tstamp FROM devicestatus WHERE eui IN (SELECT eui FROM devices
             // WHERE groups LIKE ?) GROUP BY eui ORDER BY eui";
             sql = """
-                    SELECT a.eui, last(a.status, a.ts) as status, last(a.alert, a.ts) as alert, 
+                    SELECT a.eui, last(a.status, a.ts) as status, last(a.alert, a.ts) as alert,
                     b.name, last(a.ts, a.ts) as tstamp
                     FROM devicestatus as a
                     JOIN devices as b ON a.eui=b.eui
                     WHERE a.eui IN (SELECT eui FROM devices WHERE groups LIKE ?)
                     GROUP BY a.eui,b.eui ORDER BY a.eui
+                    """;
+        } else if (intervalOnly) {
+            sql = """
+                    SELECT eui, ts2 AS tstamp, '' AS name,ROUND(EXTRACT(EPOCH FROM (ts2 - ts1)) *1000)::INTEGER AS interval
+                    FROM (
+                    SELECT eui, tstamp, tstamp AS ts1, LAG(tstamp) OVER (ORDER BY tstamp DESC) AS ts2
+                    FROM analyticdata
+                    WHERE eui=? ORDER BY tstamp DESC LIMIT 2
+                    ) subquery WHERE ts2 IS NOT NULL
                     """;
         } else {
             // sql = "SELECT eui, status, alert, ts as tstamp FROM devicestatus WHERE eui =
@@ -288,7 +305,7 @@ public class StatusReport extends Report implements ReportIface {
         }
 
         // get data
-        String sql = getSqlQuery(query);
+        String sql = getSqlQuery(query, false);
         String eui = "";
         String deviceName = "";
         String previousEui = "";

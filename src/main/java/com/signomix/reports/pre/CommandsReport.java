@@ -112,6 +112,8 @@ public class CommandsReport extends Report implements ReportIface {
             logger.error("Error getting commands for device: " + query.getEui() + " - " + e.getMessage());
             return result;
         }
+        // sort commands by createdAt descending
+        commands.sort((c1, c2) -> Long.compare(c2.createdAt.longValue(), c1.createdAt.longValue()));
         logger.info("Commands found for device: " + query.getEui()+  " - " + commands.size());
         for (CommandDto command : commands) {
             DatasetRow row = new DatasetRow();
