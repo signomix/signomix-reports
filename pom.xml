@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.sigmomix</groupId>
   <artifactId>reports</artifactId>
-  <version>1.15.9</version>
+  <version>1.0.0</version>
   <properties>
     <compiler-plugin.version>3.12.1</compiler-plugin.version>
     <maven.compiler.release>17</maven.compiler.release>
@@ -63,7 +63,7 @@
     <dependency>
       <groupId>com.signomix</groupId>
       <artifactId>signomix-common</artifactId>
-      <version>1.43.15</version>
+      <version>1.43.16</version>
     </dependency>
     <dependency>
       <groupId>com.signomix</groupId>
@@ -74,7 +74,7 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-container-image-jib</artifactId>
     </dependency>
-<!--     <dependency>
+    <!--     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-opentelemetry</artifactId>
     </dependency>
@@ -95,6 +95,11 @@
       <groupId>org.questdb</groupId>
       <artifactId>questdb</artifactId>
       <version>8.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>redis.clients</groupId>
+      <artifactId>jedis</artifactId>
+      <version>6.0.0</version>
     </dependency>
   </dependencies>
   <build>

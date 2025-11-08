@@ -116,6 +116,26 @@ public class ReportApi {
                 .build();
     }
 
+    @Path("/twins")
+    @GET
+    public Response getTwinsReport(@HeaderParam("Authentication") String token,
+            @QueryParam("organization") Integer organization,
+            @QueryParam("tenant") Integer tenant,
+            @QueryParam("path") String path,
+            @QueryParam("query") String query,
+            @QueryParam("language") String language) {
+        User user = authLogic.getUserFromToken(token);
+        if (user == null) {
+            ReportResult result = new ReportResult();
+            result.status = 401;
+            result.errorMessage = "Unauthorized";
+            return Response.ok().entity(result).build();
+            // return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        return Response.ok().entity(reportPort.getTwinsReportResult(query, organization, tenant, path, language, user))
+                .build();
+    }
+
     @Path("/multi")
     @GET
     @Consumes("application/json")

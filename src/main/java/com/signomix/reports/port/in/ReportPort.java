@@ -30,4 +30,16 @@ public class ReportPort {
         return reportRunner.generateFormatedReport(query, user, withHeader);
     }
 
+    public ReportResult getTwinsReportResult(String query, Integer organization, Integer tenant, String path, String language, User user) {
+        try{
+            DataQuery dataQuery = DataQuery.parse(query);
+            return reportRunner.generateTwinsReport(dataQuery, organization, tenant, path, user);
+        }catch(Exception e){
+            ReportResult result = new ReportResult();
+            result.status = 500;
+            result.errorMessage = e.getMessage();
+            return result;
+        }
+    }
+
 }

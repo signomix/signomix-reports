@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 
@@ -22,49 +23,18 @@ import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
 
 import io.agroal.api.AgroalDataSource;
+import redis.clients.jedis.Jedis;
 
-public class GroupReport2 extends Report implements ReportIface {
+public class TwinsReport extends Report implements ReportIface {
 
-    private static final Logger logger = Logger.getLogger(GroupReport2.class);
+    private static final Logger logger = Logger.getLogger(TwinsReport.class);
 
     private static final String DATASET_NAME = "dataset0";
     private static final String QUERY_NAME = "default";
 
     private static final int DEFAULT_ORGANIZATION = 1;
 
-    @Override
-    public ReportResult getReportResult(
-            AgroalDataSource olapDs,
-            AgroalDataSource oltpDs,
-            AgroalDataSource logsDs,
-            DataQuery query,
-            Integer organization,
-            Integer tenant,
-            String path,
-            User user) {
-        String reportName = DATASET_NAME;
-        ReportResult result = new ReportResult();
-        result.setQuery(QUERY_NAME, query);
-        result.contentType = "application/json";
-        result.setId(-1L);
-        result.setTitle("User login history report");
-        result.setDescription("");
-        result.setTimestamp(new Timestamp(System.currentTimeMillis()));
-        result.setQuery(reportName, query);
-
-        DatasetHeader header = new DatasetHeader(reportName);
-        header.columns.add("login");
-        header.columns.add("result_code");
-        result.addDatasetHeader(header);
-
-        Dataset data = new Dataset(reportName);
-        data.eui = "";
-        data.size = 0L;
-        result.addDataset(data);
-
-        return result;
-
-    }
+    private static Jedis jedis;
 
     @Override
     public ReportResult getReportResult(
@@ -98,40 +68,21 @@ public class GroupReport2 extends Report implements ReportIface {
 
     private ReportResult getGroupData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit) {
+        return null;
 
-        List<String> channelNames = getGroupChannels(oltpDs, query.getGroup(), user);
-        if (channelNames.isEmpty()) {
-            logger.warn("No channels found for group: " + query.getGroup());
-            ReportResult result = new ReportResult();
-            result.contentType = "application/json";
-            result.error("No channels found for group: " + query.getGroup());
-            return result;
-        }
-        String sql = "SELECT last(a.eui,a.tstamp) AS eui,last(a.tstamp,a.tstamp) AS tstamp,"
-        + "d.name as cfg_name,";
-        for (int i = 0; i < channelNames.size(); i++) {
-            sql += "last(a.d" + (i + 1) + ",a.tstamp) FILTER (WHERE a.d" + (i + 1) + " IS NOT NULL) AS d" + (i + 1);
-            if (i < channelNames.size() - 1) {
-                sql += ",";
-            }
-        }
-        sql += " FROM analyticdata a";
-        sql += " JOIN devices d ON d.eui = a.eui";
-        sql += " WHERE a.eui IN (";
-        
-        sql+= """
-            SELECT d.eui 
-            FROM 
-            devices d 
-            JOIN 
-            device_tags dt ON d.eui = dt.eui 
-            WHERE 
-            d.organization = 158 
-            AND dt.tag_name = 'type' 
-            AND dt.tag_value = 'room' 
-                """;
-        sql += ")";
-        sql += " GROUP BY a.eui, d.name";
+    }
+
+    public ReportResult getReportResult(
+            AgroalDataSource olapDs,
+            AgroalDataSource oltpDs,
+            AgroalDataSource logsDs,
+            DataQuery query,
+            Integer organization,
+            Integer tenant,
+            String path,
+            User user) {
+
+        List<String> channelNames = query.getChannels();
 
         ReportResult result = new ReportResult();
         result.setQuery("default", query);
@@ -141,63 +92,81 @@ public class GroupReport2 extends Report implements ReportIface {
         result.setDescription("");
         result.setTimestamp(new Timestamp(System.currentTimeMillis()));
 
-        try (Connection conn = olapDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-            //stmt.setString(1, "%," + query.getGroup() + ",%");
-            try (ResultSet rs = stmt.executeQuery()) {
-                Dataset dataset = new Dataset(query.getGroup());
-                dataset.name = DATASET_NAME;
-                dataset.eui = query.getGroup();
-                dataset.size = 0L;
+        try {
 
-                DatasetHeader header = new DatasetHeader(query.getGroup());
+            logger.info("Generating twins report for organization " + organization + " with query: " + query);
+
+            Dataset dataset = new Dataset(query.getEui());
+            dataset.name = DATASET_NAME;
+            dataset.eui = query.getEui();
+            dataset.size = 0L;
+
+            
+            HashMap<String, Object> config;
+            String eui;
+            Double value;
+            long timestamp=System.currentTimeMillis();
+            Jedis jedis = new Jedis("redis", 6379);
+            // get redis keys starts from prefix
+            String keyPrefix = organization + ":" + query.getGroup(); // eg: "158:DKHSROOM*"
+            Set<String> keys = jedis.keys(keyPrefix);
+            for (String key : keys) {
+                HashMap<String, String> dataMap = new HashMap<>(jedis.hgetAll(key));
+                //log dataMap
+                logger.info("Twins data for key " + key + ": " + dataMap.toString());
+                DatasetHeader header = new DatasetHeader(dataMap.get("eui"));
                 for (String channel : channelNames) {
                     header.columns.add(channel);
                 }
-                // result.addDatasetHeader(header);
-                HashMap<String, Object> config;
-                String eui;
-                Double value;
-                while (rs.next()) {
-                    result.addDatasetHeader(header);
-                    eui = rs.getString("eui");
-                    dataset = new Dataset(eui);
-                    dataset.eui = eui;
-                    try {
-                        dataset.name = rs.getString("cfg_name");
-                    } catch (SQLException e) {
-                        dataset.name = DATASET_NAME;
-                    }
-                    DatasetRow row = new DatasetRow();
-                    row.timestamp = rs.getTimestamp("tstamp").getTime();
-                    // latitude, longitude, altitude are rs columns number 4, 5, 6
-                    for (int i = 0; i < channelNames.size(); i++) {
-                        // row.values.add(rs.getDouble("d" + (i + 1)));
-                        value = rs.getDouble(i + 4);
-                        if (rs.wasNull()) {
-                            row.values.add(null);
-                        } else {
-                            row.values.add(value);
-                        }
-                    }
-                    dataset.data.add(row);
-                    dataset.size = 1L;
-                    result.addDataset(dataset);
-                    config = new HashMap<>();
-                    config.put("name", dataset.name);
-                    /* try {
-                        config.put("latitude", rs.getDouble("cfg_latitude"));
-                        config.put("longitude", rs.getDouble("cfg_longitude"));
-                        config.put("altitude", rs.getDouble("cfg_altitude"));
-                    } catch (SQLException e) {
-                    } */
-                    result.configs.put(dataset.eui, config);
+                header.name=dataMap.get("eui");
+                result.addDatasetHeader(header);
+                eui = dataMap.get("eui");
+                dataset = new Dataset(eui);
+                dataset.eui = eui;
+                dataset.name = dataMap.get("name");
+                DatasetRow row = new DatasetRow();
+                try{
+                    row.timestamp = Long.parseLong(dataMap.get("timestamp"));
+                } catch (NumberFormatException nfe){
+                    logger.warn("Invalid timestamp format for device: " + eui);
+                    row.timestamp = timestamp;
                 }
+                for (int i = 0; i < channelNames.size(); i++) {
+                    try{
+                        value = Double.parseDouble(dataMap.get(channelNames.get(i)));
+                    } catch (NumberFormatException nfe){
+                        value=null;
+                    } catch (Exception e){
+                        logger.warn("Error parsing value for channel: " + channelNames.get(i) + ", Error: " + e.getMessage());
+                        value=null;
+                    }
+                    logger.info("Channel: " + channelNames.get(i) + ", Value: " + value);
+                    row.values.add(value);
+                }
+                dataset.data.add(row);
+                dataset.size = 1L;
+                result.addDataset(dataset);
+                config = new HashMap<>();
+                config.put("name", dataMap.get("name"));
+                result.configs.put(dataset.eui, config);
             }
-        } catch (SQLException ex) {
+            logger.info("sort order: " + query.getSortOrder());
+            if (query.getSortOrder() != null && query.getSortOrder().equalsIgnoreCase("asc")) {
+                // sort datasets by name ascending
+                result.datasets.sort((d1, d2) -> d2.name.compareTo(d1.name));
+                // sort dataset headers by name
+                result.headers.sort((h1, h2) -> h2.name.compareTo(h1.name));
+            } else {
+                // sort datasets by name descending
+                result.datasets.sort((d1, d2) -> d1.name.compareTo(d2.name));
+                // sort dataset headers by name
+                result.headers.sort((h1, h2) -> h1.name.compareTo(h2.name));
+            }
+            result.status = 200;
+
+        } catch (Exception ex) {
             logger.error("Error getting group data: " + ex.getMessage());
-            result.error("Error getting group data: " + ex.getMessage());
-            logger.error("SQL: " + sql);
+            result.error(500, "Error getting group data: " + ex.getMessage());
         }
 
         return result;

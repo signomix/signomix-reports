@@ -13,6 +13,7 @@ import com.signomix.common.db.ReportDaoIface;
 import com.signomix.common.db.ReportIface;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.pre.DummyReport;
+import com.signomix.reports.pre.TwinsReport;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
@@ -54,19 +55,37 @@ public class ReportRunner {
         result.status = 501;
         result.errorMessage = "Not implemented";
         return result;
-        
-        /* DataQuery dataQuery;
+
+        /*
+         * DataQuery dataQuery;
+         * try {
+         * dataQuery = DataQuery.parse(query);
+         * } catch (DataQueryException e) {
+         * return new ReportResult().error(400,e.getMessage());
+         * }
+         * ReportIface report = (ReportIface) getReportInstance();
+         * if (null == report) {
+         * return new ReportResult().error(404,"Class not found: " +
+         * dataQuery.getClassName());
+         * }
+         * ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery,
+         * organization, tenant, path, user);
+         * return result;
+         */
+    }
+
+    public ReportResult generateTwinsReport(DataQuery dataQuery, Integer organization, Integer tenant, String path,
+            User user) {
+        ReportResult result = new ReportResult();
         try {
-            dataQuery = DataQuery.parse(query);
-        } catch (DataQueryException e) {
-            return new ReportResult().error(400,e.getMessage());
+            ReportIface report = new TwinsReport();
+            result = report.getReportResult(null, null, null, dataQuery, organization, tenant, path, user);
+        } catch (Exception e) {
+            e.printStackTrace();
+            result.status = 500;
+            result.errorMessage = e.getMessage();
         }
-        ReportIface report = (ReportIface) getReportInstance();
-        if (null == report) {
-            return new ReportResult().error(404,"Class not found: " + dataQuery.getClassName());
-        }
-        ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery, organization, tenant, path, user);
-        return result; */
+        return result;
     }
 
     public ReportResult generateReport(String query, User user) {
@@ -75,32 +94,35 @@ public class ReportRunner {
             dataQuery = DataQuery.parse(query);
         } catch (DataQueryException e) {
             e.printStackTrace();
-            return new ReportResult().error(400,"DataQuery error: " + e.getMessage());
+            return new ReportResult().error(400, "DataQuery error: " + e.getMessage());
         }
         return generateReport(dataQuery, user);
-        /* 
-        String className = null;
-        try {
-            className = dataQuery.getClassName();
-            if(className == null) {
-                return new ReportResult().error(400,"Class not defined in query");
-            }else if(className.indexOf(".")<0) {
-                className = "com.signomix.reports.pre." + className;
-            }
-            boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
-                    user.tenant, user.path);
-            if (!isAvailable) {
-                return new ReportResult().error(401,"Access denied for " + className);
-            }
-        } catch (Exception e) {
-            return new ReportResult().error(400,"Error " + e.getMessage());
-        }
-        ReportIface report = (ReportIface) getReportInstance(dataQuery, user);
-        if (null == report) {
-            return new ReportResult().error(404,"Report not found: " + className);
-        }
-        ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery, user);
-        return result; */
+        /*
+         * String className = null;
+         * try {
+         * className = dataQuery.getClassName();
+         * if(className == null) {
+         * return new ReportResult().error(400,"Class not defined in query");
+         * }else if(className.indexOf(".")<0) {
+         * className = "com.signomix.reports.pre." + className;
+         * }
+         * boolean isAvailable = reportDao.isAvailable(className, user.number,
+         * user.organization.intValue(),
+         * user.tenant, user.path);
+         * if (!isAvailable) {
+         * return new ReportResult().error(401,"Access denied for " + className);
+         * }
+         * } catch (Exception e) {
+         * return new ReportResult().error(400,"Error " + e.getMessage());
+         * }
+         * ReportIface report = (ReportIface) getReportInstance(dataQuery, user);
+         * if (null == report) {
+         * return new ReportResult().error(404,"Report not found: " + className);
+         * }
+         * ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery,
+         * user);
+         * return result;
+         */
     }
 
     public ReportResult generateReport(DataQuery dataQuery, User user) {
@@ -108,24 +130,33 @@ public class ReportRunner {
         String className = null;
         try {
             className = dataQuery.getClassName();
-            if(className == null) {
-                return new ReportResult().error(400,"Class not defined in query");
-            }else if(className.indexOf(".")<0) {
+            if (className == null) {
+                return new ReportResult().error(400, "Class not defined in query");
+            } else if (className.indexOf(".") < 0) {
                 className = "com.signomix.reports.pre." + className;
             }
             boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
                     user.tenant, user.path);
             if (!isAvailable) {
-                return new ReportResult().error(401,"Access denied for " + className);
+                return new ReportResult().error(401, "Access denied for " + className);
             }
         } catch (Exception e) {
-            return new ReportResult().error(400,"Error " + e.getMessage());
+            return new ReportResult().error(400, "Error " + e.getMessage());
         }
+        ReportResult result;
+
+        if (className.equals("com.signomix.reports.pre.TwinsReport")) {
+            // special case for twins report
+            logger.info("Generating twins report for user: " + user.number);
+            result = generateTwinsReport(dataQuery, user.organization.intValue(), user.tenant, "", user);
+            return result;
+        }
+
         ReportIface report = (ReportIface) getReportInstance(dataQuery, user);
         if (null == report) {
-            return new ReportResult().error(404,"Report not found: " + className);
+            return new ReportResult().error(404, "Report not found: " + className);
         }
-        ReportResult result = report.getReportResult(olapDs,oltpDs,logsDs,dataQuery, user);
+        result = report.getReportResult(olapDs, oltpDs, logsDs, dataQuery, user);
         return result;
     }
 
@@ -134,9 +165,9 @@ public class ReportRunner {
         String className = null;
         try {
             className = dataQuery.getClassName();
-            if(className == null) {
+            if (className == null) {
                 return "Error 400: Class not defined in query";
-            }else if(className.indexOf(".")<0) {
+            } else if (className.indexOf(".") < 0) {
                 className = "com.signomix.reports.pre." + className;
             }
             boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
@@ -152,13 +183,13 @@ public class ReportRunner {
             return "Error 400: Report not found: " + className;
         }
         String format = dataQuery.getFormat();
-        if(format.equals("html")) {
-            return report.getReportHtml(olapDs,oltpDs,logsDs,dataQuery, user, withHeader);
-        }else if(format.equals("csv")) {
+        if (format.equals("html")) {
+            return report.getReportHtml(olapDs, oltpDs, logsDs, dataQuery, user, withHeader);
+        } else if (format.equals("csv")) {
             return report.getReportCsv(oltpDs, olapDs, logsDs, dataQuery, user);
-        }else {
+        } else {
             return report.getReportFormat(oltpDs, olapDs, logsDs, dataQuery, user, format);
-            //return "Error 400: Format not supported: " + dataQuery.getFormat();
+            // return "Error 400: Format not supported: " + dataQuery.getFormat();
         }
     }
 
@@ -168,9 +199,9 @@ public class ReportRunner {
 
     private ReportIface getReportInstance(DataQuery query, User user) {
         String className = query.getClassName();
-        if(className == null) {
+        if (className == null) {
             return null;
-        }else if(className.indexOf(".")<0) {
+        } else if (className.indexOf(".") < 0) {
             className = "com.signomix.reports.pre." + className;
         }
         ReportIface report = null;

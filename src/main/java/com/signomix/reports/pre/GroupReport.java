@@ -99,49 +99,6 @@ public class GroupReport extends Report implements ReportIface {
     private ReportResult getGroupData(AgroalDataSource olapDs, AgroalDataSource oltpDs,
             AgroalDataSource logsDs, DataQuery query, User user, int defaultLimit) {
 
-        /*
-         * SELECT DISTINCT ON (eui)
-         * eui,tstamp,d1,d2,d3,d4,d5,d6,d7,d8,d9,d10,
-         * d11,d12,d13,d14,d15,d16,d17,d18,d19,d20,
-         * d21,d22,d23,d24
-         * FROM
-         * analyticdata
-         * WHERE eui IN (SELECT eui from devices WHERE groups LIKE '%,?,%')
-         * ORDER BY
-         * eui,
-         * tstamp DESC;
-         * 
-         * SELECT DISTINCT ON (eui)
-         * last(eui,tstamp),last(tstamp,tstamp),
-         * last(d1,tstamp),last(d2,tstamp),last(d3,tstamp)
-         * FROM
-         * analyticdata
-         * WHERE eui IN (SELECT eui from devices WHERE groups LIKE '%,DKHSROOMS,%')
-         * ORDER BY
-         * eui,
-         * tstamp DESC;
-         * 
-         * SELECT DISTINCT ON (eui)
-         * last(eui,tstamp),last(tstamp,tstamp),
-         * last(d1,tstamp),last(d2,tstamp),last(d3,tstamp)
-         * FROM
-         * analyticdata
-         * WHERE eui IN (SELECT eui from devices)
-         * ORDER BY
-         * eui,
-         * tstamp DESC;
-         * 
-         * SELECT
-         * last(eui,tstamp),last(tstamp,tstamp),
-         * last(d1,tstamp) FILTER (WHERE d1 IS NOT NULL) AS d1,
-         * last(d2,tstamp) FILTER (WHERE d2 IS NOT NULL) AS d2,
-         * last(d3,tstamp) FILTER (WHERE d3 IS NOT NULL) AS d3
-         * FROM
-         * analyticdata
-         * WHERE eui IN (SELECT eui from devices WHERE groups LIKE '%,DKHS_ROOMS,%')
-         * GROUP BY eui LIMIT 100
-         */
-
         List<String> channelNames = getGroupChannels(oltpDs, query.getGroup(), user);
         if (channelNames.isEmpty()) {
             logger.warn("No channels found for group: " + query.getGroup());
