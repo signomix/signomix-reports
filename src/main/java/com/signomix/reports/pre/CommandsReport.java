@@ -106,7 +106,7 @@ public class CommandsReport extends Report implements ReportIface {
         try {
             iotDao = new IotDatabaseDao();
             iotDao.setDatasource(oltpDs);
-            commands = iotDao.getDeviceCommands(query.getEui(), query.isNotNull());
+            commands = iotDao.getDeviceCommands(query.getEui(), query.isNotNull(), query.getLimit());
         } catch (IotDatabaseException e) {
             e.printStackTrace();
             logger.error("Error getting commands for device: " + query.getEui() + " - " + e.getMessage());

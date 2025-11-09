@@ -43,6 +43,9 @@ public class ReportRunner {
     @ConfigProperty(name = "signomix.report.limit")
     Integer reportResultLimit;
 
+    @ConfigProperty(name = "signomix.organization.default")
+    Long defaultOrganizationId;
+
     ReportDaoIface reportDao;
 
     void onStart(@Observes StartupEvent ev) {
@@ -135,8 +138,17 @@ public class ReportRunner {
             } else if (className.indexOf(".") < 0) {
                 className = "com.signomix.reports.pre." + className;
             }
-            boolean isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
+            boolean isAvailable = false;
+            if(user.organization==defaultOrganizationId){
+                logger.info("Checking report access for default organization");
+                isAvailable = reportDao.isAvailable(className, user.number, user.organization.intValue(),
                     user.tenant, user.path);
+            }else{
+                logger.info("Checking report access for selected organization");
+                isAvailable = reportDao.isAvailable(className, null, user.organization.intValue(),
+                    user.tenant, user.path);
+            }
+            
             if (!isAvailable) {
                 return new ReportResult().error(401, "Access denied for " + className);
             }
