@@ -238,6 +238,7 @@ public class DqlReport extends Report implements ReportIface {
 
         // get data
         sql = getSqlQuery(query, channelColumnNames, user, withDeviceStatus);
+        logger.info("Data query SQL: " + sql);
         try (Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, query.getEui());
@@ -392,22 +393,15 @@ public class DqlReport extends Report implements ReportIface {
             columns += "," + getDeviceStatusPart();
         }
 
-        String notNullCondition;
+        String notNullCondition="";
 
         if (query.isNotNull() && channelColumnNames.size() > 0) {
-            notNullCondition = " AND NOT (";
             for (String channel : channelColumnNames.keySet()) {
                 columnName = channelColumnNames.get(channel);
                 if (columnName.startsWith("d")) {
-                    notNullCondition += channelColumnNames.get(channel) + " IS NULL OR ";
+                    notNullCondition += "AND " + channelColumnNames.get(channel) + " IS NOT NULL ";
                 }
             }
-            if (notNullCondition.endsWith(" OR ")) {
-                notNullCondition = notNullCondition.substring(0, notNullCondition.length() - 4);
-            }
-            notNullCondition += ") ";
-        } else {
-            notNullCondition = "";
         }
         String sql = "SELECT " + columns + " FROM analyticdata WHERE eui = ? ";
 
