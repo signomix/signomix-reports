@@ -1,0 +1,42 @@
+{
+    "stations": [
+        {
+            "id": 905070291592923,
+            "href": "https://signomix.com/gt/asmp",
+            "owner": "Otwarta Sieć Rzeczy - udostępnione dla Kanarka",
+            "indoor": null,
+            "ignore": null,
+            "name": "00033728193A26DB",
+            "country": null,
+            "lat": 59.0,
+            "lon": 51.73630549874255,
+            "values": [
+                {
+                    "type": "Temperature",
+                    "v": 9.3,
+                    "t": 1766439883670
+                },
+                {
+                    "type": "Humidity",
+                    "v": 16.3,
+                    "t": 1766439883670
+                },
+                {
+                    "type": "PM25",
+                    "v": 999.3,
+                    "t": 1766439883670
+                },
+                {
+                    "type": "PM10",
+                    "v": 4.4,
+                    "t": 1766439883670
+                },
+                {
+                    "type": "Pressure",
+                    "v": 13.0,
+                    "t": 1766439883670
+                }
+            ]
+        }
+    ]
+}

@@ -15,33 +15,35 @@
  */
 package com.signomix.reports.pre.kanarek;
 
+import java.util.ArrayList;
+
+import org.jboss.logging.Logger;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.signomix.common.db.Dataset;
-import com.signomix.common.db.DatasetHeader;
 import com.signomix.common.db.DatasetRow;
 import com.signomix.common.db.ReportResult;
 import com.signomix.common.iot.ChannelData;
+
 import jakarta.enterprise.context.ApplicationScoped;
-import java.util.ArrayList;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class KanarekFormatter {
 
     Logger logger = Logger.getLogger(KanarekFormatter.class.getName());
 
-    //private Map args;
+    // private Map args;
 
     /**
      * Translates response result
      *
-     * @param data        response data
+     * @param data response data
      *
      * @return response as JSON string
      */
     public String format(ReportResult data) {
         // logger.info("formatting Kanarek response");
-        //args.clear();
+        // args.clear();
         /*
          * args.put(JsonWriter.PRETTY_PRINT, true);
          * args.put(JsonWriter.DATE_FORMAT, "dd/MMM/yyyy:kk:mm:ss Z");
@@ -50,11 +52,9 @@ public class KanarekFormatter {
          */
         ObjectMapper mapper = new ObjectMapper();
         mapper.setDateFormat(
-            new java.text.SimpleDateFormat("dd/MMM/yyyy:kk:mm:ss Z")
-        );
+                new java.text.SimpleDateFormat("dd/MMM/yyyy:kk:mm:ss Z"));
         mapper.setDefaultPrettyPrinter(
-            new com.fasterxml.jackson.core.util.DefaultPrettyPrinter()
-        );
+                new com.fasterxml.jackson.core.util.DefaultPrettyPrinter());
         KanarekDto kdto = new KanarekDto();
         ChannelData cdata;
         // String ownerName = result.getHeaders().getFirst("X-Group-Name");
@@ -63,11 +63,15 @@ public class KanarekFormatter {
         String groupHref = "https://signomix.com/gt/asmp";
 
         String channelName;
-        DatasetHeader header = data.headers.get(0);
-        ArrayList<String> columns = header.columns;
+        // DatasetHeader header;
+        ArrayList<String> columns;
 
         for (int k = 0; k < data.datasets.size(); k++) {
             Dataset dataset = data.datasets.get(k);
+            columns = data.headers.get(k).columns;
+            if (logger.isDebugEnabled()){
+                logger.debug("columns: " + columns);
+            }
             for (int i = 0; i < dataset.data.size(); i++) {
                 try {
                     KanarekStationDto kStation = new KanarekStationDto();
@@ -99,25 +103,21 @@ public class KanarekFormatter {
                                 break;
                             default:
                                 KanarekValue kv = new KanarekValue(
-                                    channelName,
-                                    (Double) row.values.get(j),
-                                    row.timestamp
-                                );
+                                        channelName,
+                                        (Double) row.values.get(j),
+                                        row.timestamp);
                                 if (null != kv.type) {
                                     kStation.values.add(kv);
                                 }
                         }
                     }
-                    if (
-                        null != kStation.id &&
-                        null != kStation.lat &&
-                        null != kStation.lon
-                    ) {
+                    if (null != kStation.id &&
+                            null != kStation.lat &&
+                            null != kStation.lon) {
                         kdto.stations.add(kStation);
                     } else {
                         logger.warn(
-                            "Unable to add Kanarek Station data - requred values not set."
-                        );
+                                "Unable to add Kanarek Station data - requred values not set.");
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -125,7 +125,7 @@ public class KanarekFormatter {
             }
         }
 
-        //return JsonWriter.objectToJson(kdto, args) + "\r\n";
+        // return JsonWriter.objectToJson(kdto, args) + "\r\n";
         try {
             return mapper.writeValueAsString(kdto);
         } catch (Exception e) {
