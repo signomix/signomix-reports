@@ -239,7 +239,7 @@ public class StatusReport extends Report implements ReportIface {
      */
     private String getSqlQuery(DataQuery query, boolean intervalOnly) {
         String sql;
-        if (query.getGroup() != null) {
+        if (query.getGroup() != null && query.getGroup().indexOf(',') < 0) {
             // sql = "SELECT eui, last(status,ts) as status, last(alert,ts) as alert,
             // last(ts,ts) as tstamp FROM devicestatus WHERE eui IN (SELECT eui FROM devices
             // WHERE groups LIKE ?) GROUP BY eui ORDER BY eui";
@@ -250,6 +250,39 @@ public class StatusReport extends Report implements ReportIface {
                     JOIN devices as b ON a.eui=b.eui
                     WHERE a.eui IN (SELECT eui FROM devices WHERE groups LIKE ?)
                     GROUP BY a.eui,b.eui ORDER BY a.eui
+                    """;
+        } else if (query.getGroup() != null && query.getGroup().indexOf(',') >= 0) {
+            // pseudo group with comma separated EUIs list
+            // first comma must be removed
+            String[] euiList = query.getGroup().substring(1).split(",");
+            StringBuilder inClause = new StringBuilder();
+            String eui;
+            for (int i = 0; i < euiList.length; i++) {
+                // trim and remove possible spaces, single quotes, double quotes
+                eui = euiList[i].trim().replace(" ", "").replace("'", "").replace("\"", "");
+                if (eui.isEmpty()) {
+                    continue;
+                }
+                inClause.append("'");
+                inClause.append(eui);
+                inClause.append("'");
+                if (i < euiList.length - 1) {
+                    inClause.append(",");
+                }
+            }
+            // sql = "SELECT eui, last(status,ts) as status, last(alert,ts) as alert,
+            // last(ts,ts) as tstamp FROM devicestatus WHERE eui IN (SELECT eui FROM devices
+            // WHERE groups LIKE ?) GROUP BY eui ORDER BY eui";
+            sql = """
+                    SELECT a.eui, last(a.status, a.ts) as status, last(a.alert, a.ts) as alert,
+                    b.name, last(a.ts, a.ts) as tstamp
+                    FROM devicestatus as a
+                    JOIN devices as b ON a.eui=b.eui
+                    WHERE a.eui IN (
+                    """
+                    + inClause.toString()
+                    + """
+                    ) GROUP BY a.eui,b.eui ORDER BY a.eui
                     """;
         } else if (intervalOnly) {
             sql = """
@@ -313,7 +346,9 @@ public class StatusReport extends Report implements ReportIface {
         try (
                 Connection conn = olapDs.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, "%," + query.getGroup() + ",%");
+            if (query.getGroup() != null && query.getGroup().indexOf(',') < 0) {
+                stmt.setString(1, "%," + query.getGroup() + ",%");
+            }
             try (ResultSet rs = stmt.executeQuery()) {
                 double value;
                 while (rs.next()) {
