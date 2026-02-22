@@ -7,6 +7,7 @@ import org.jboss.logging.Logger;
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
+import com.signomix.common.db.ReportDefinition;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.domain.AuthLogic;
 import com.signomix.reports.port.in.AuthPort;
@@ -17,6 +18,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -88,9 +91,10 @@ public class ReportApi {
         }
         switch (dataQuery.getFormat()) {
             case "csv":
-                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user,false),"text/csv").build();
+                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user, false), "text/csv").build();
             case "html":
-                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user,false),MediaType.TEXT_HTML).build();
+                return Response.ok(reportPort.getReportResultFormatted(dataQuery, user, false), MediaType.TEXT_HTML)
+                        .build();
             default:
                 return Response.ok().entity(reportPort.getReportResult(dataQuery, user)).build();
         }
@@ -155,4 +159,114 @@ public class ReportApi {
         return Response.ok().entity(reportPort.getReportResult(queryList.get(0), user)).build();
     }
 
+    /**
+     * Get the list of available report definitions available for the authenticated
+     * user.
+     * 
+     * @param token
+     * @return
+     */
+    @Path("/reports")
+    @GET
+    public Response getReports(@HeaderParam("Authentication") String token) {
+        User user = authLogic.getUserFromToken(token);
+        if (user == null) {
+            ReportResult result = new ReportResult();
+            result.status = 401;
+            result.errorMessage = "Unauthorized";
+            return Response.ok().entity(result).build();
+            // return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        return Response.ok().entity(reportPort.getReportDefinitionsForUser(user)).build();
+    }
+
+    /**
+     * Get the report definition by id. The user must be authenticated and have
+     * access to the report definition.
+     * 
+     * @param token
+     * @param id
+     * @return
+     */
+    @Path("/report")
+    @GET
+    public Response getReportDefinition(@HeaderParam("Authentication") String token,
+            @QueryParam("id") Integer id) {
+        User user = authLogic.getUserFromToken(token);
+        if (user == null) {
+            ReportResult result = new ReportResult();
+            result.status = 401;
+            result.errorMessage = "Unauthorized";
+            return Response.ok().entity(result).build();
+            // return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        return Response.ok().entity(reportPort.getReportDefinition(id, user)).build();
+    }
+
+    /**
+     * Create a report definition.
+     * The user must be authenticated and have access to the report definition.
+     * 
+     * @param token
+     * @param reportDefinition
+     * @return
+     */
+    @Path("/report")
+    @POST
+    @Consumes("application/json")
+    public Response createReportDefinition(@HeaderParam("Authentication") String token,
+            ReportDefinition reportDefinition) {
+        User user = authLogic.getUserFromToken(token);
+        if (user == null) {
+            ReportResult result = new ReportResult();
+            result.status = 401;
+            result.errorMessage = "Unauthorized";
+            return Response.ok().entity(result).build();
+            // return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        try {
+            reportPort.createReportDefinition(reportDefinition, user);
+            return Response.ok().build();
+        } catch (Exception e) {
+            logger.error("Error creating report definition", e);
+            ReportResult result = new ReportResult();
+            result.status = 500;
+            result.errorMessage = "Error creating report definition: " + e.getMessage();
+            return Response.ok().entity(result).build();
+        }
+    }
+
+    /** 
+     * Update a report definition.
+     * The user must be authenticated and have access to the report definition.
+     * 
+     * @param token
+     * @param id
+     * @param reportDefinition
+     * @return
+     */
+    @Path("/report")
+    @PUT
+    @Consumes("application/json")
+    public Response updateReportDefinition(@HeaderParam("Authentication") String token,
+            ReportDefinition reportDefinition) {
+        User user = authLogic.getUserFromToken(token);
+        if (user == null) {
+            ReportResult result = new ReportResult();
+            result.status = 401;
+            result.errorMessage = "Unauthorized";
+            return Response.ok().entity(result).build();
+            // return Response.status(Response.Status.UNAUTHORIZED).build();    
+        }
+        try {
+            reportPort.updateReportDefinition(reportDefinition, user);
+            return Response.ok().build();
+        } catch (Exception e) {
+            logger.error("Error updating report definition", e);
+            ReportResult result = new ReportResult();
+            result.status = 500;
+            result.errorMessage = "Error updating report definition: " + e.getMessage();
+            return Response.ok().entity(result).build();
+        }
+    }
 }
