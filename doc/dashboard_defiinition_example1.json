@@ -1,0 +1,828 @@
+{
+    "id": "IOTEMULATOR",
+    "name": "IOTEMULATOR",
+    "userID": "tester1",
+    "title": "IOTEMULATOR",
+    "shared": true,
+    "team": ",admin,",
+    "widgets": [
+        {
+            "name": "w0",
+            "dev_id": "IOTEMULATOR",
+            "channel": "temperature",
+            "channelTranslated": null,
+            "type": "symbol",
+            "query": "last 1",
+            "range": "",
+            "title": "temperature",
+            "description": "",
+            "unitName": "&deg;C",
+            "width": 1,
+            "group": "",
+            "modified": false,
+            "chartOption": null,
+            "app_id": null,
+            "format": null,
+            "commandType": null,
+            "role": null,
+            "unit": null,
+            "rounding": "1",
+            "icon": null,
+            "config": "{\n\"multiplier\": 1\n}",
+            "axisOptions": false,
+            "yAxisAutoScale": false,
+            "chartArea": false,
+            "chartMarkers": false,
+            "changed": false,
+            "mobile_size": "0"
+        },
+        {
+            "name": "w1",
+            "dev_id": "IOTEMULATOR",
+            "channel": "humidity",
+            "channelTranslated": null,
+            "type": "symbol",
+            "query": "last 1",
+            "range": "",
+            "title": "humidity",
+            "description": "",
+            "unitName": "%",
+            "width": 1,
+            "group": "",
+            "modified": false,
+            "chartOption": null,
+            "app_id": null,
+            "format": null,
+            "commandType": null,
+            "role": null,
+            "unit": null,
+            "rounding": "1",
+            "icon": null,
+            "config": null,
+            "axisOptions": false,
+            "yAxisAutoScale": false,
+            "chartArea": false,
+            "chartMarkers": false,
+            "changed": false
+        },
+        {
+            "name": "w2",
+            "dev_id": "IOTEMULATOR",
+            "channel": "latitude",
+            "channelTranslated": null,
+            "type": "symbol",
+            "query": "last 1",
+            "range": "",
+            "title": "latitude",
+            "description": "",
+            "unitName": "",
+            "width": 1,
+            "group": "",
+            "modified": false,
+            "chartOption": null,
+            "app_id": null,
+            "format": null,
+            "commandType": null,
+            "role": null,
+            "unit": null,
+            "rounding": null,
+            "icon": null,
+            "config": null,
+            "axisOptions": false,
+            "yAxisAutoScale": false,
+            "chartArea": false,
+            "chartMarkers": false,
+            "changed": false
+        },
+        {
+            "name": "w3",
+            "dev_id": "IOTEMULATOR",
+            "channel": "longitude",
+            "channelTranslated": null,
+            "type": "symbol",
+            "query": "last 1",
+            "range": "",
+            "title": "longitude",
+            "description": "",
+            "unitName": "",
+            "width": 1,
+            "group": "",
+            "modified": false,
+            "chartOption": null,
+            "app_id": null,
+            "format": null,
+            "commandType": null,
+            "role": null,
+            "unit": null,
+            "rounding": null,
+            "icon": null,
+            "config": null,
+            "axisOptions": false,
+            "yAxisAutoScale": false,
+            "chartArea": false,
+            "chartMarkers": false,
+            "changed": false
+        },
+        {
+            "title": "4",
+            "type": "chart",
+            "role": "",
+            "description": "opis",
+            "name": "w4",
+            "mobile_size": "1",
+            "dev_id": "",
+            "group": "",
+            "channel_translated": "temperatura,wilgotność",
+            "query": "report DqlReport eui IOTEMULATOR channel temperature,humidity limit 100",
+            "changed": true,
+            "yAxisAutoScale": false,
+            "axisOptions": false,
+            "chartArea": false,
+            "chartMarkers": true,
+            "chartType": "line",
+            "format": "standard",
+            "timeUnit": "",
+            "mobile_position": 1
+        },
+        {
+            "title": "5",
+            "type": "map",
+            "role": "",
+            "description": "opis",
+            "name": "w5",
+            "mobile_size": "0",
+            "dev_id": "",
+            "channel": "latitude,longitude",
+            "group": "",
+            "query": "report DqlReport eui IOTEMULATOR channel latitude,longitude limit 1",
+            "changed": false,
+            "yAxisAutoScale": false,
+            "axisOptions": false,
+            "chartArea": false,
+            "chartMarkers": false
+        },
+        {
+            "title": "Intervał",
+            "type": "symbol",
+            "role": "",
+            "description": "opis",
+            "name": "w6",
+            "mobile_size": "0",
+            "dev_id": "",
+            "group": "",
+            "query": "report StatusReport eui IOTEMULATOR channel interval",
+            "changed": false,
+            "yAxisAutoScale": false,
+            "axisOptions": false,
+            "chartArea": false,
+            "chartMarkers": false,
+            "config": "{\n    \"multiplier\": 0.001\n}",
+            "unitName": "sek.",
+            "icon": "bi-clock-history"
+        },
+        {
+            "title": "4 copy",
+            "type": "report",
+            "role": "",
+            "description": "opis",
+            "name": "w7",
+            "mobile_size": "0",
+            "dev_id": "",
+            "group": "",
+            "channel_translated": "temperatura,wilgotność",
+            "query": "report DqlReport eui IOTEMULATOR channel temperature,humidity limit 2",
+            "changed": false,
+            "yAxisAutoScale": false,
+            "axisOptions": false,
+            "chartArea": false,
+            "chartMarkers": false,
+            "chartType": "line",
+            "format": "standard",
+            "timeUnit": ""
+        }
+    ],
+    "items": [
+        {
+            "1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 0,
+                "id": "dd9916f0-8453-4ee8-aaf8-d78bea74c065"
+            },
+            "10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 2,
+                "h": 1,
+                "x": 0,
+                "y": 0,
+                "id": "dd9916f0-8453-4ee8-aaf8-d78bea74c065"
+            },
+            "id": "dd9916f0-8453-4ee8-aaf8-d78bea74c065",
+            "_el1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 0,
+                "id": "dd9916f0-8453-4ee8-aaf8-d78bea74c065"
+            },
+            "_el10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 2,
+                "h": 1,
+                "x": 0,
+                "y": 0,
+                "id": "dd9916f0-8453-4ee8-aaf8-d78bea74c065"
+            }
+        },
+        {
+            "1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 1,
+                "id": "0a95fdd3-89d7-4537-a735-360eda70ff4d"
+            },
+            "10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 2,
+                "h": 1,
+                "x": 3,
+                "y": 0,
+                "id": "0a95fdd3-89d7-4537-a735-360eda70ff4d"
+            },
+            "id": "0a95fdd3-89d7-4537-a735-360eda70ff4d",
+            "_el1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 1,
+                "id": "0a95fdd3-89d7-4537-a735-360eda70ff4d"
+            },
+            "_el10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 2,
+                "h": 1,
+                "x": 3,
+                "y": 0,
+                "id": "0a95fdd3-89d7-4537-a735-360eda70ff4d"
+            }
+        },
+        {
+            "1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 2,
+                "id": "595feea9-d373-4b87-b467-081e5224ac8b"
+            },
+            "10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 2,
+                "h": 1,
+                "x": 6,
+                "y": 0,
+                "id": "595feea9-d373-4b87-b467-081e5224ac8b"
+            },
+            "id": "595feea9-d373-4b87-b467-081e5224ac8b",
+            "_el1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 2,
+                "id": "595feea9-d373-4b87-b467-081e5224ac8b"
+            },
+            "_el10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 2,
+                "h": 1,
+                "x": 6,
+                "y": 0,
+                "id": "595feea9-d373-4b87-b467-081e5224ac8b"
+            }
+        },
+        {
+            "1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 3,
+                "id": "a55685cf-c9bf-430e-b559-b0a27428593d"
+            },
+            "10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 2,
+                "h": 1,
+                "x": 8,
+                "y": 0,
+                "id": "a55685cf-c9bf-430e-b559-b0a27428593d"
+            },
+            "id": "a55685cf-c9bf-430e-b559-b0a27428593d",
+            "_el1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 3,
+                "id": "a55685cf-c9bf-430e-b559-b0a27428593d"
+            },
+            "_el10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {
+                    "w": 10,
+                    "h": 4
+                },
+                "w": 2,
+                "h": 1,
+                "x": 8,
+                "y": 0,
+                "id": "a55685cf-c9bf-430e-b559-b0a27428593d"
+            }
+        },
+        {
+            "1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 4
+            },
+            "10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 4,
+                "h": 2,
+                "x": 0,
+                "y": 1,
+                "id": "_8geuffz32"
+            },
+            "id": "_8geuffz32",
+            "_el1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 4
+            },
+            "_el10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 4,
+                "h": 2,
+                "x": 0,
+                "y": 1,
+                "id": "_8geuffz32"
+            }
+        },
+        {
+            "1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 5
+            },
+            "10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 5,
+                "h": 3,
+                "x": 4,
+                "y": 1,
+                "id": "_hjvys9q93"
+            },
+            "id": "_hjvys9q93",
+            "_el1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 5
+            },
+            "_el10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 5,
+                "h": 3,
+                "x": 4,
+                "y": 1,
+                "id": "_hjvys9q93"
+            }
+        },
+        {
+            "1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 6
+            },
+            "10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 4,
+                "h": 1,
+                "x": 0,
+                "y": 3,
+                "id": "_lgn2ycyrn"
+            },
+            "id": "_lgn2ycyrn",
+            "_el1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 6
+            },
+            "_el10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 4,
+                "h": 1,
+                "x": 0,
+                "y": 3,
+                "id": "_lgn2ycyrn"
+            }
+        },
+        {
+            "1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 7
+            },
+            "10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 4,
+                "h": 2,
+                "x": 0,
+                "y": 4,
+                "id": "_1385sfa9l"
+            },
+            "id": "_1385sfa9l",
+            "_el1": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 1,
+                "h": 1,
+                "x": 0,
+                "y": 7
+            },
+            "_el10": {
+                "fixed": false,
+                "resizable": true,
+                "draggable": true,
+                "customDragger": false,
+                "customResizer": false,
+                "min": {
+                    "w": 1,
+                    "h": 1
+                },
+                "max": {},
+                "w": 4,
+                "h": 2,
+                "x": 0,
+                "y": 4,
+                "id": "_1385sfa9l"
+            }
+        }
+    ],
+    "sharedToken": "~~cHVibGljOjE3NjA0NzUwMzExNzA",
+    "administrators": ",",
+    "version": 2,
+    "organizationId": 1,
+    "favourite": false,
+    "templateId": null,
+    "variables": null,
+    "deviceEuis": [
+        "IOTEMULATOR"
+    ],
+    "groupEuis": [],
+    "widgetsAsJson": "[{\"name\":\"w0\",\"dev_id\":\"IOTEMULATOR\",\"channel\":\"temperature\",\"channelTranslated\":null,\"type\":\"symbol\",\"query\":\"last 1\",\"range\":\"\",\"title\":\"temperature\",\"description\":\"\",\"unitName\":\"&deg;C\",\"width\":1,\"group\":\"\",\"modified\":false,\"chartOption\":null,\"app_id\":null,\"format\":null,\"commandType\":null,\"role\":null,\"unit\":null,\"rounding\":\"1\",\"icon\":null,\"config\":\"{\\n\\\"multiplier\\\": 1\\n}\",\"axisOptions\":false,\"yAxisAutoScale\":false,\"chartArea\":false,\"chartMarkers\":false,\"changed\":false,\"mobile_size\":\"0\"},{\"name\":\"w1\",\"dev_id\":\"IOTEMULATOR\",\"channel\":\"humidity\",\"channelTranslated\":null,\"type\":\"symbol\",\"query\":\"last 1\",\"range\":\"\",\"title\":\"humidity\",\"description\":\"\",\"unitName\":\"%\",\"width\":1,\"group\":\"\",\"modified\":false,\"chartOption\":null,\"app_id\":null,\"format\":null,\"commandType\":null,\"role\":null,\"unit\":null,\"rounding\":\"1\",\"icon\":null,\"config\":null,\"axisOptions\":false,\"yAxisAutoScale\":false,\"chartArea\":false,\"chartMarkers\":false,\"changed\":false},{\"name\":\"w2\",\"dev_id\":\"IOTEMULATOR\",\"channel\":\"latitude\",\"channelTranslated\":null,\"type\":\"symbol\",\"query\":\"last 1\",\"range\":\"\",\"title\":\"latitude\",\"description\":\"\",\"unitName\":\"\",\"width\":1,\"group\":\"\",\"modified\":false,\"chartOption\":null,\"app_id\":null,\"format\":null,\"commandType\":null,\"role\":null,\"unit\":null,\"rounding\":null,\"icon\":null,\"config\":null,\"axisOptions\":false,\"yAxisAutoScale\":false,\"chartArea\":false,\"chartMarkers\":false,\"changed\":false},{\"name\":\"w3\",\"dev_id\":\"IOTEMULATOR\",\"channel\":\"longitude\",\"channelTranslated\":null,\"type\":\"symbol\",\"query\":\"last 1\",\"range\":\"\",\"title\":\"longitude\",\"description\":\"\",\"unitName\":\"\",\"width\":1,\"group\":\"\",\"modified\":false,\"chartOption\":null,\"app_id\":null,\"format\":null,\"commandType\":null,\"role\":null,\"unit\":null,\"rounding\":null,\"icon\":null,\"config\":null,\"axisOptions\":false,\"yAxisAutoScale\":false,\"chartArea\":false,\"chartMarkers\":false,\"changed\":false},{\"title\":\"4\",\"type\":\"chart\",\"role\":\"\",\"description\":\"opis\",\"name\":\"w4\",\"mobile_size\":\"0\",\"dev_id\":\"\",\"group\":\"\",\"channel_translated\":\"temperatura,wilgotność\",\"query\":\"report DqlReport eui IOTEMULATOR channel temperature,humidity limit 100\",\"changed\":true,\"yAxisAutoScale\":false,\"axisOptions\":false,\"chartArea\":false,\"chartMarkers\":true,\"chartType\":\"line\",\"format\":\"standard\",\"timeUnit\":\"\"},{\"title\":\"5\",\"type\":\"map\",\"role\":\"\",\"description\":\"opis\",\"name\":\"w5\",\"mobile_size\":\"0\",\"dev_id\":\"\",\"channel\":\"latitude,longitude\",\"group\":\"\",\"query\":\"report DqlReport eui IOTEMULATOR channel latitude,longitude limit 1\",\"changed\":false,\"yAxisAutoScale\":false,\"axisOptions\":false,\"chartArea\":false,\"chartMarkers\":false},{\"title\":\"Intervał\",\"type\":\"symbol\",\"role\":\"\",\"description\":\"opis\",\"name\":\"w6\",\"mobile_size\":\"0\",\"dev_id\":\"\",\"group\":\"\",\"query\":\"report StatusReport eui IOTEMULATOR channel interval\",\"changed\":false,\"yAxisAutoScale\":false,\"axisOptions\":false,\"chartArea\":false,\"chartMarkers\":false,\"config\":\"{\\n    \\\"multiplier\\\": 0.001\\n}\",\"unitName\":\"sek.\",\"icon\":\"bi-clock-history\"},{\"title\":\"4 copy\",\"type\":\"report\",\"role\":\"\",\"description\":\"opis\",\"name\":\"w7\",\"mobile_size\":\"0\",\"dev_id\":\"\",\"group\":\"\",\"channel_translated\":\"temperatura,wilgotność\",\"query\":\"report DqlReport eui IOTEMULATOR channel temperature,humidity limit 2\",\"changed\":false,\"yAxisAutoScale\":false,\"axisOptions\":false,\"chartArea\":false,\"chartMarkers\":false,\"chartType\":\"line\",\"format\":\"standard\",\"timeUnit\":\"\"}]",
+    "itemsAsJson": "[{\"1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":1,\"h\":1,\"x\":0,\"y\":0,\"id\":\"dd9916f0-8453-4ee8-aaf8-d78bea74c065\"},\"10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":2,\"h\":1,\"x\":0,\"y\":0,\"id\":\"dd9916f0-8453-4ee8-aaf8-d78bea74c065\"},\"id\":\"dd9916f0-8453-4ee8-aaf8-d78bea74c065\",\"_el1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":1,\"h\":1,\"x\":0,\"y\":0,\"id\":\"dd9916f0-8453-4ee8-aaf8-d78bea74c065\"},\"_el10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":2,\"h\":1,\"x\":0,\"y\":0,\"id\":\"dd9916f0-8453-4ee8-aaf8-d78bea74c065\"}},{\"1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":1,\"h\":1,\"x\":0,\"y\":1,\"id\":\"0a95fdd3-89d7-4537-a735-360eda70ff4d\"},\"10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":2,\"h\":1,\"x\":3,\"y\":0,\"id\":\"0a95fdd3-89d7-4537-a735-360eda70ff4d\"},\"id\":\"0a95fdd3-89d7-4537-a735-360eda70ff4d\",\"_el1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":1,\"h\":1,\"x\":0,\"y\":1,\"id\":\"0a95fdd3-89d7-4537-a735-360eda70ff4d\"},\"_el10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":2,\"h\":1,\"x\":3,\"y\":0,\"id\":\"0a95fdd3-89d7-4537-a735-360eda70ff4d\"}},{\"1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":1,\"h\":1,\"x\":0,\"y\":2,\"id\":\"595feea9-d373-4b87-b467-081e5224ac8b\"},\"10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":2,\"h\":1,\"x\":6,\"y\":0,\"id\":\"595feea9-d373-4b87-b467-081e5224ac8b\"},\"id\":\"595feea9-d373-4b87-b467-081e5224ac8b\",\"_el1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":1,\"h\":1,\"x\":0,\"y\":2,\"id\":\"595feea9-d373-4b87-b467-081e5224ac8b\"},\"_el10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":2,\"h\":1,\"x\":6,\"y\":0,\"id\":\"595feea9-d373-4b87-b467-081e5224ac8b\"}},{\"1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":1,\"h\":1,\"x\":0,\"y\":3,\"id\":\"a55685cf-c9bf-430e-b559-b0a27428593d\"},\"10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":2,\"h\":1,\"x\":8,\"y\":0,\"id\":\"a55685cf-c9bf-430e-b559-b0a27428593d\"},\"id\":\"a55685cf-c9bf-430e-b559-b0a27428593d\",\"_el1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":1,\"h\":1,\"x\":0,\"y\":3,\"id\":\"a55685cf-c9bf-430e-b559-b0a27428593d\"},\"_el10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{\"w\":10,\"h\":4},\"w\":2,\"h\":1,\"x\":8,\"y\":0,\"id\":\"a55685cf-c9bf-430e-b559-b0a27428593d\"}},{\"1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":1,\"h\":1,\"x\":0,\"y\":4},\"10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":4,\"h\":2,\"x\":0,\"y\":1,\"id\":\"_8geuffz32\"},\"id\":\"_8geuffz32\",\"_el1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":1,\"h\":1,\"x\":0,\"y\":4},\"_el10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":4,\"h\":2,\"x\":0,\"y\":1,\"id\":\"_8geuffz32\"}},{\"1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":1,\"h\":1,\"x\":0,\"y\":5},\"10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":5,\"h\":3,\"x\":4,\"y\":1,\"id\":\"_hjvys9q93\"},\"id\":\"_hjvys9q93\",\"_el1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":1,\"h\":1,\"x\":0,\"y\":5},\"_el10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":5,\"h\":3,\"x\":4,\"y\":1,\"id\":\"_hjvys9q93\"}},{\"1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":1,\"h\":1,\"x\":0,\"y\":6},\"10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":4,\"h\":1,\"x\":0,\"y\":3,\"id\":\"_lgn2ycyrn\"},\"id\":\"_lgn2ycyrn\",\"_el1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":1,\"h\":1,\"x\":0,\"y\":6},\"_el10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":4,\"h\":1,\"x\":0,\"y\":3,\"id\":\"_lgn2ycyrn\"}},{\"1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":1,\"h\":1,\"x\":0,\"y\":7},\"10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":4,\"h\":2,\"x\":0,\"y\":4,\"id\":\"_1385sfa9l\"},\"id\":\"_1385sfa9l\",\"_el1\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":1,\"h\":1,\"x\":0,\"y\":7},\"_el10\":{\"fixed\":false,\"resizable\":true,\"draggable\":true,\"customDragger\":false,\"customResizer\":false,\"min\":{\"w\":1,\"h\":1},\"max\":{},\"w\":4,\"h\":2,\"x\":0,\"y\":4,\"id\":\"_1385sfa9l\"}}]",
+    "organizationName": "default"
+}

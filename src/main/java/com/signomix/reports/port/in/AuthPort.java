@@ -11,7 +11,7 @@ import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class AuthPort {
-
+    
     @Inject
     Logger logger;
 

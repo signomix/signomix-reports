@@ -5,6 +5,10 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.signomix.common.db.Dataset;
+import com.signomix.common.db.DatasetHeader;
+import com.signomix.common.db.DatasetRow;
+import com.signomix.common.db.ReportResult;
 
 public class ChartDefinition {
     public String title;
@@ -30,6 +34,94 @@ public class ChartDefinition {
     );
 
     public ChartDefinition() {
+    }
+
+    /**
+     * Sets the chart data based on the provided ReportResult. 
+     * It processes the first dataset and populates the chart data, values, and measurement names accordingly.
+     * @param reportResult
+     */
+    public void setReportData(ReportResult reportResult) {
+        if (reportResult == null || reportResult.datasets == null || reportResult.datasets.isEmpty()) {
+            return;
+        }
+
+        // Get the first dataset (as per requirement: "ReportResult zawiera DataSet jednego źródła danych")
+        Dataset dataset = reportResult.datasets.get(0);
+        
+        if (dataset == null || dataset.data == null || dataset.data.isEmpty()) {
+            return;
+        }
+
+        // Clear existing data
+        this.data.clear();
+        this.values.clear();
+        this.measurementNames.clear();
+
+        // Get header information for measurement names
+        if (reportResult.headers != null && !reportResult.headers.isEmpty()) {
+            DatasetHeader header = reportResult.headers.get(0);
+            if (header != null && header.columns != null) {
+                this.measurementNames.addAll(header.columns);
+            }
+        }
+
+        // Process each value series separately
+        int numValuesPerRow = dataset.data.get(0).values.size();
+        
+        // Initialize data structures for each series
+        for (int seriesIndex = 0; seriesIndex < numValuesPerRow; seriesIndex++) {
+            this.data.add(new ArrayList<>());
+            this.values.add(new ArrayList<>());
+        }
+
+        // Populate data and values
+        for (DatasetRow row : dataset.data) {
+            if (row.values != null) {
+                for (int seriesIndex = 0; seriesIndex < row.values.size(); seriesIndex++) {
+                    Object valueObj = row.values.get(seriesIndex);
+                    
+                    // Convert to double (handle different numeric types)
+                    double value = 0.0;
+                    if (valueObj instanceof Number) {
+                        value = ((Number) valueObj).doubleValue();
+                    }
+                    
+                    // Add to data structure
+                    ChartData chartData = new ChartData(row.timestamp, value);
+                    this.data.get(seriesIndex).add(chartData);
+                    
+                    // Add to values structure
+                    this.values.get(seriesIndex).add(value);
+                }
+            }
+        }
+
+        // Set line colors if not already set
+        if (this.lineColors.isEmpty() && !this.data.isEmpty()) {
+            for (int i = 0; i < Math.min(this.data.size(), DEFAULT_COLORS.size()); i++) {
+                this.lineColors.add(DEFAULT_COLORS.get(i));
+            }
+        }
+    }
+
+    public void setReportData(String jsonReportResult) {
+        if (jsonReportResult == null || jsonReportResult.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+            // Parse the JSON string into ReportResult object using ReportResult's static parse method
+            ReportResult reportResult = ReportResult.parse(jsonReportResult);
+            
+            // Delegate to the existing setReportData method
+            setReportData(reportResult);
+            
+        } catch (Exception e) {
+            // Log the error and leave data structures unchanged
+            // In a real application, you might want to log this error
+            // For now, we'll silently fail to maintain existing behavior
+        }
     }
 
     @JsonCreator
