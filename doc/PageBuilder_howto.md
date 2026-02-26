@@ -9,6 +9,7 @@
 - [Basic Usage](#basic-usage)
 - [JSON Dashboard Definition Format](#json-dashboard-definition-format)
 - [Responsive Grid System](#responsive-grid-system)
+- [Column Configuration](#column-configuration)
 - [Widget Configuration](#widget-configuration)
 - [Mobile-Specific Settings](#mobile-specific-settings)
 - [Advanced Features](#advanced-features)
@@ -24,7 +25,7 @@
 import com.signomix.reports.domain.dashboard.PageBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-// Basic usage
+// Basic usage with default 10 columns
 try {
     String dashboardJson = "{\"title\":\"My Dashboard\",\"widgets\":[],\"items\":[]}";
     String html = PageBuilder.buildPage(dashboardJson);
@@ -32,6 +33,18 @@ try {
     // Use the generated HTML
     System.out.println(html);
     // Or save to file, return in API response, etc.
+} catch (JsonProcessingException e) {
+    // Handle JSON parsing errors
+    e.printStackTrace();
+}
+
+// Usage with 12 columns
+try {
+    String dashboardJson = "{\"title\":\"My Dashboard\",\"widgets\":[],\"items\":[]}";
+    String html = PageBuilder.buildPage(dashboardJson, 12);
+    
+    // Use the generated HTML
+    System.out.println(html);
 } catch (JsonProcessingException e) {
     // Handle JSON parsing errors
     e.printStackTrace();
@@ -104,22 +117,55 @@ Each item in the `items` array corresponds to a widget by index and contains:
 
 ```json
 {
-  "_el10": {
-    "x": 0,      // Column position (0-9)
+  "_el10" or "_el12": {
+    "x": 0,      // Column position (0-9 for 10 columns, 0-11 for 12 columns)
     "y": 0,      // Row position
-    "w": 2,      // Width in columns (1-10)
-    "h": 1       // Height in rows
+    "w": 2,      // Width in columns (1-10 or 1-12)
+    "h": 1       // Height in rows (1 or greater)
   }
 }
 ```
+
+#### Widget Height Support
+
+**New Feature**: Widgets can now occupy multiple rows by setting `h > 1`.
+
+When a widget has `h > 1`, the PageBuilder creates a nested grid structure:
+- The widget occupies `h` consecutive rows in the grid
+- A nested grid is created inside the widget card
+- The first row contains the widget title and content
+- Additional rows (`h-1` rows) are created as empty space fillers
+
+**Example**:
+```json
+{
+  "_el10": {
+    "x": 0,
+    "y": 0,
+    "w": 4,
+    "h": 3  // This widget will occupy 3 rows vertically
+  }
+}
+```
+
+This creates a widget that spans 4 columns and 3 rows, with:
+- Row 1: Widget title and content
+- Row 2: Empty space
+- Row 3: Empty space
+
+**Use Cases**:
+- Large charts that need more vertical space
+- Dashboard headers or footers
+- Multi-section widgets with multiple data views
+- Creating visual hierarchy in your dashboard
 
 ## Responsive Grid System
 
 ### Desktop Layout (≥768px width)
 
-- **10-column grid system**
-- Uses custom CSS classes: `col-10-1` to `col-10-10`
-- Widgets are positioned according to `_el10.x`, `_el10.y`, `_el10.w`, `_el10.h`
+- **Configurable column grid system** (10 or 12 columns)
+- Uses custom CSS classes: `col-{columns}-{width}` (e.g., `col-10-1` to `col-10-10` or `col-12-1` to `col-12-12`)
+- Widgets are positioned according to `_el{columns}.x`, `_el{columns}.y`, `_el{columns}.w`, `_el{columns}.h`
 - Widgets are sorted by row (`y`) then column (`x`)
 
 ### Mobile Layout (<768px width)
@@ -134,6 +180,40 @@ Each item in the `items` array corresponds to a widget by index and contains:
 - `d-none d-md-block`: Desktop-only content
 - `d-md-none`: Mobile-only content
 - `col-12`: Full-width columns on mobile
+
+## Column Configuration
+
+The PageBuilder supports two column configurations: 10 columns (default) and 12 columns.
+
+### Using 10 Columns (Default)
+
+```java
+// Default behavior - uses 10 columns
+String html = PageBuilder.buildPage(dashboardJson);
+
+// Explicit 10 columns
+String html = PageBuilder.buildPage(dashboardJson, 10);
+```
+
+### Using 12 Columns
+
+```java
+// Use 12 columns
+String html = PageBuilder.buildPage(dashboardJson, 12);
+```
+
+### Choosing Between 10 and 12 Columns
+
+| Factor | 10 Columns | 12 Columns |
+|--------|-----------|-----------|
+| **Grid precision** | Less precise (10% increments) | More precise (8.33% increments) |
+| **Layout flexibility** | Good for simple layouts | Better for complex layouts |
+| **Widget sizing** | Limited to multiples of 10% | More granular sizing options |
+| **Use case** | Quick dashboards, simple layouts | Detailed dashboards, precise layouts |
+
+**Recommendation**:
+- Use **10 columns** for simple dashboards or when you want simpler calculations
+- Use **12 columns** for more complex layouts requiring finer control over widget widths
 
 ## Widget Configuration
 
@@ -290,6 +370,24 @@ String simpleDashboard = "{"
 String html = PageBuilder.buildPage(simpleDashboard);
 ```
 
+### Dashboard with 12 Columns
+
+```java
+String twelveColumnDashboard = "{"
+    + "\"title\":\"12-Column Dashboard\","
+    + "\"widgets\":["
+    + "    {\"title\":\"Main Content\", \"mobile_size\":\"1\"},"
+    + "    {\"title\":\"Sidebar\", \"mobile_size\":\"1\"}"
+    + "],"
+    + "\"items\":["
+    + "    {\"_el12\":{\"x\":0,\"y\":0,\"w\":9,\"h\":1}},"  // 9 columns wide
+    + "    {\"_el12\":{\"x\":9,\"y\":0,\"w\":3,\"h\":1}}"   // 3 columns wide
+    + "]"
+    + "}";
+
+String html = PageBuilder.buildPage(twelveColumnDashboard, 12);
+```
+
 ### Complex Dashboard with Mobile Customization
 
 ```java
@@ -301,15 +399,57 @@ String complexDashboard = "{"
     + "    {\"title\":\"Status\", \"mobile_size\":\"1\", \"mobile_position\":1}"
     + "],"
     + "\"items\":["
-    + "    {\"_el10\":{\"x\":0,\"y\":0,\"w\":6,\"h\":2}},"  // Main Chart - 6 columns wide
-    + "    {\"_el10\":{\"x\":6,\"y\":0,\"w\":4,\"h\":2}},"  // Side Panel - 4 columns wide
-    + "    {\"_el10\":{\"x\":0,\"y\":2,\"w\":3,\"h\":1}}"   // Status - 3 columns wide
+    + "    {\"_el10\":{\"x\":0,\"y\":0,\"w\":6,\"h\":2}},"  // Main Chart - 6 columns wide, 2 rows tall
+    + "    {\"_el10\":{\"x\":6,\"y\":0,\"w\":4,\"h\":2}},"  // Side Panel - 4 columns wide, 2 rows tall
+    + "    {\"_el10\":{\"x\":0,\"y\":2,\"w\":3,\"h\":1}}"   // Status - 3 columns wide, 1 row tall
     + "]"
     + "}";
 
 String html = PageBuilder.buildPage(complexDashboard);
 ```
 
+### Complex Dashboard with 12 Columns
+
+```java
+String complexTwelveDashboard = "{"
+    + "\"title\":\"Advanced 12-Column Dashboard\","
+    + "\"widgets\":["
+    + "    {\"title\":\"Main Chart\", \"mobile_size\":\"2\", \"mobile_position\":0},"
+    + "    {\"title\":\"Side Panel\", \"mobile_size\":\"0\"},"  // Hidden on mobile
+    + "    {\"title\":\"Status\", \"mobile_size\":\"1\", \"mobile_position\":1}"
+    + "],"
+    + "\"items\":["
+    + "    {\"_el12\":{\"x\":0,\"y\":0,\"w\":8,\"h\":2}},"  // Main Chart - 8 columns wide, 2 rows tall
+    + "    {\"_el12\":{\"x\":8,\"y\":0,\"w\":4,\"h\":2}},"  // Side Panel - 4 columns wide, 2 rows tall
+    + "    {\"_el12\":{\"x\":0,\"y\":2,\"w\":4,\"h\":1}}"   // Status - 4 columns wide, 1 row tall
+    + "]"
+    + "}";
+
+String html = PageBuilder.buildPage(complexTwelveDashboard, 12);
+```
+
+
+### Dashboard with Tall Widgets (Using Height Feature)
+
+```java
+String tallWidgetsDashboard = "{"
+    + "\"title\":\"Dashboard with Tall Widgets\","
+    + "\"widgets\":["
+    + "    {\"title\":\"Header\", \"mobile_size\":\"1\"},"
+    + "    {\"title\":\"Large Chart\", \"mobile_size\":\"1\"},"
+    + "    {\"title\":\"Summary\", \"mobile_size\":\"1\"}"
+    + "],"
+    + "\"items\":["
+    + "    {\"_el10\":{\"x\":0,\"y\":0,\"w\":12,\"h\":1}},"  // Header - full width, 1 row
+    + "    {\"_el10\":{\"x\":0,\"y\":1,\"w\":8,\"h\":3}},"  // Large Chart - 8 columns, 3 rows tall
+    + "    {\"_el10\":{\"x\":8,\"y\":1,\"w\":4,\"h\":2}}"   // Summary - 4 columns, 2 rows tall
+    + "]"
+    + "}";
+
+String html = PageBuilder.buildPage(tallWidgetsDashboard);
+```
+
+**Note**: The Large Chart widget (h=3) will occupy 3 rows vertically, creating a nested grid with 3 rows inside its card. The Summary widget (h=2) will occupy 2 rows with a nested grid containing 2 rows.
 ## Integration with Existing Systems
 
 ### REST API Endpoint
@@ -419,3 +559,24 @@ For issues or questions about PageBuilder:
 ## License
 
 This component is part of the Signomix Reports project and is subject to its licensing terms.
+### Dashboard with Tall Widgets (Using Height Feature)
+
+```java
+String tallWidgetsDashboard = "{"
+    + "\"title\":\"Dashboard with Tall Widgets\","
+    + "\"widgets\":["
+    + "    {\"title\":\"Header\", \"mobile_size\":\"1\"},"
+    + "    {\"title\":\"Large Chart\", \"mobile_size\":\"1\"},"
+    + "    {\"title\":\"Summary\", \"mobile_size\":\"1\"}"
+    + "],"
+    + "\"items\":["
+    + "    {\"_el10\":{\"x\":0,\"y\":0,\"w\":12,\"h\":1}},"  // Header - full width, 1 row
+    + "    {\"_el10\":{\"x\":0,\"y\":1,\"w\":8,\"h\":3}},"  // Large Chart - 8 columns, 3 rows tall
+    + "    {\"_el10\":{\"x\":8,\"y\":1,\"w\":4,\"h\":2}}"   // Summary - 4 columns, 2 rows tall
+    + "\]"
+    + "}";
+
+String html = PageBuilder.buildPage(tallWidgetsDashboard);
+```
+
+**Note**: The Large Chart widget (h=3) will occupy 3 rows vertically, creating a nested grid with 3 rows inside its card. The Summary widget (h=2) will occupy 2 rows with a nested grid containing 2 rows.

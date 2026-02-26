@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IOTEMULATOR</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .dashboard-title { margin-bottom: 20px; }
+        .widget-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; height: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .widget-title { font-weight: bold; margin-bottom: 10px; font-size: 1.1rem; }
+        .widget-content { color: #666; }
+        /* Custom 10-column grid for desktop */
+        @media (min-width: 768px) {
+            .col-10-1 { width: 10%; }
+            .col-10-2 { width: 20%; }
+            .col-10-3 { width: 30%; }
+            .col-10-4 { width: 40%; }
+            .col-10-5 { width: 50%; }
+            .col-10-6 { width: 60%; }
+            .col-10-7 { width: 70%; }
+            .col-10-8 { width: 80%; }
+            .col-10-9 { width: 90%; }
+            .col-10-10 { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-title">
+        <h1>IOTEMULATOR</h1>
+    </div>
+    <div class="d-none d-md-block">
+        <div class="row g-3">
+            <div class="row mb-3">
+                <div class="col-10-2" style="grid-column: span 2;">
+                    <div class="widget-card h-100">
+                        <div class="widget-title">temperature</div>
+                        <div class="widget-content">Widget content</div>
+                    </div>
+                </div>
+                <div class="col-10-2" style="grid-column: span 2;">
+                    <div class="widget-card h-100">
+                        <div class="widget-title">humidity</div>
+                        <div class="widget-content">Widget content</div>
+                    </div>
+                </div>
+                <div class="col-10-2" style="grid-column: span 2;">
+                    <div class="widget-card h-100">
+                        <div class="widget-title">latitude</div>
+                        <div class="widget-content">Widget content</div>
+                    </div>
+                </div>
+                <div class="col-10-2" style="grid-column: span 2;">
+                    <div class="widget-card h-100">
+                        <div class="widget-title">longitude</div>
+                        <div class="widget-content">Widget content</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-10-4" style="grid-column: span 4;">
+                    <div class="widget-card h-100">
+                        <div class="row h-100 g-0">
+                            <div class="col-12 mb-2">
+                                <div class="widget-title">4</div>
+                                <div class="widget-content">Widget content</div>
+                            </div>
+                            <div class="col-12 mb-2">
+                                <div class="widget-content">&nbsp;</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-10-5" style="grid-column: span 5;">
+                    <div class="widget-card h-100">
+                        <div class="row h-100 g-0">
+                            <div class="col-12 mb-2">
+                                <div class="widget-title">5</div>
+                                <div class="widget-content">Widget content</div>
+                            </div>
+                            <div class="col-12 mb-2">
+                                <div class="widget-content">&nbsp;</div>
+                            </div>
+                            <div class="col-12 mb-2">
+                                <div class="widget-content">&nbsp;</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-10-4" style="grid-column: span 4;">
+                    <div class="widget-card h-100">
+                        <div class="widget-title">Intervał</div>
+                        <div class="widget-content">Widget content</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-10-4" style="grid-column: span 4;">
+                    <div class="widget-card h-100">
+                        <div class="row h-100 g-0">
+                            <div class="col-12 mb-2">
+                                <div class="widget-title">4 copy</div>
+                                <div class="widget-content">Widget content</div>
+                            </div>
+                            <div class="col-12 mb-2">
+                                <div class="widget-content">&nbsp;</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="d-md-none">
+        <div class="row g-2">
+            <div class="col-12 mb-2">
+                <div class="widget-card">
+                    <div class="widget-title">4</div>
+                    <div class="widget-content">Widget content</div>
+                </div>
+            </div>
+            <div class="col-12 mb-2">
+                <div class="widget-card">
+                    <div class="widget-title">humidity</div>
+                    <div class="widget-content">Widget content</div>
+                </div>
+            </div>
+            <div class="col-12 mb-2">
+                <div class="widget-card">
+                    <div class="widget-title">latitude</div>
+                    <div class="widget-content">Widget content</div>
+                </div>
+            </div>
+            <div class="col-12 mb-2">
+                <div class="widget-card">
+                    <div class="widget-title">longitude</div>
+                    <div class="widget-content">Widget content</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
