@@ -11,7 +11,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
@@ -39,7 +41,7 @@ public class PageApi {
             return Response.ok().entity(result).build();
             // return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-        String pageSource = pagePort.getPageSource(definition);
+        String pageSource = pagePort.getPageSource(user, definition);
         if(pageSource == null) {
             ReportResult result = new ReportResult();
             result.status = 400;
@@ -49,4 +51,24 @@ public class PageApi {
         return Response.ok().entity(pageSource).build();
     }
 
-   }
+    @Path("/page/{id}")
+    @GET
+    public Response getPageById(@HeaderParam("Authentication") String token,
+            @PathParam("id") String id) {
+        User user = authPort.getUser(token);
+        if (user == null) {
+            ReportResult result = new ReportResult();
+            result.status = 401;
+            result.errorMessage = "Unauthorized";
+            return Response.ok().entity(result).build();
+        }
+        String pageSource = pagePort.getPageSourceById(user, id);
+        if(pageSource == null) {
+            ReportResult result = new ReportResult();
+            result.status = 400;
+            result.errorMessage = "Invalid page ID";
+            return Response.ok().entity(result).build();
+        }
+        return Response.ok().entity(pageSource).build();
+    }
+}

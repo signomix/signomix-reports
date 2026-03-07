@@ -3,6 +3,7 @@ package com.signomix.reports.port.in;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.signomix.common.User;
 import com.signomix.reports.domain.dashboard.PageBuilder;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,10 +15,23 @@ public class PagePort {
     @Inject
      Logger logger;
 
+    @Inject
+    PageBuilder pageBuilder;
 
-    public String getPageSource(String definition) {
+
+    public String getPageSource(User user, String definition) {
         try {
-            return PageBuilder.buildPage(definition);
+            return pageBuilder.buildPage(user,definition);
+        } catch (JsonProcessingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String getPageSourceById(User user, String id) {
+        try {
+            return pageBuilder.buildPageById(user, id);
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

@@ -5,9 +5,23 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.jboss.logging.Logger;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.signomix.common.User;
+import com.signomix.common.db.DashboardDao;
+import com.signomix.common.db.IotDatabaseException;
+import com.signomix.common.gui.Dashboard;
+import com.signomix.common.tsdb.ReportDao;
+
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.DataSource;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 /**
  * PageBuilder generates HTML dashboard pages based on JSON dashboard
@@ -15,9 +29,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Supports responsive grid layout with 1 column for mobile and configurable
  * columns (10 or 12) for desktop.
  */
+@ApplicationScoped
 public class PageBuilder {
 
+    @Inject
+    Logger logger;
+
+    @Inject
+    WidgetBuilder widgetBuilder;
+
+    @DataSource("oltp")
+    AgroalDataSource oltpDs;
+
+    DashboardDao dashboardDao;
+
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    void onStart(@Observes StartupEvent ev) {
+        dashboardDao = new DashboardDao();
+        dashboardDao.setDatasource(oltpDs);
+    }
 
     /**
      * Generates HTML page from dashboard definition JSON with default 10 columns
@@ -27,8 +58,8 @@ public class PageBuilder {
      * @return HTML string with responsive grid layout
      * @throws JsonProcessingException if JSON parsing fails
      */
-    public static String buildPage(String dashboardJson) throws JsonProcessingException {
-        return buildPage(dashboardJson, 10, true);
+    public String buildPage(User user, String dashboardJson) throws JsonProcessingException {
+        return buildPage(user, dashboardJson, 10, true);
     }
 
     /**
@@ -41,7 +72,7 @@ public class PageBuilder {
      * @return HTML string with responsive grid layout
      * @throws JsonProcessingException if JSON parsing fails
      */
-    public static String buildPage(String dashboardJson, int columns, boolean withHeader)
+    public String buildPage(User user, String dashboardJson, int columns, boolean withHeader)
             throws JsonProcessingException {
         try {
             JsonNode rootNode = objectMapper.readTree(dashboardJson);
@@ -67,8 +98,10 @@ public class PageBuilder {
                 html.append("        .dashboard-title { margin-bottom: 20px; }\n");
                 html.append(
                         "        .widget-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; height: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n");
-                html.append("        .widget-title { font-weight: bold; margin-bottom: 10px; font-size: 1.1rem; }\n");
-                html.append("        .widget-content { color: #666; }\n");
+                html.append("        .widget-title {  margin-bottom: 10px; font-size: 1.0rem; }\n");
+                html.append("        .widget-content { font-weight: bold; font-size: 1.6rem; color: #000000; }\n");
+                html.append("        .widget-no-data { font-size: 1.0rem; color: #868585; }\n");
+                html.append("        .widget-error { font-size: 1.0rem; color: #ff0000; }\n");
                 html.append("        /* Custom 10-column grid for desktop */\n");
                 html.append("        @media (min-width: 768px) {\n");
                 for (int i = 1; i <= columns; i++) {
@@ -88,18 +121,18 @@ public class PageBuilder {
 
             // Desktop grid (configurable columns)
             html.append("    <div class=\"d-none d-md-block\">\n");
-            html.append("        <div class=\"row g-3\">\n");
+            html.append("        <div class=\"row no-gutters g-3\">\n");
 
-            buildDesktopGrid(html, widgetsNode, itemsNode, columns);
+            buildDesktopGrid(user, html, widgetsNode, itemsNode, columns);
 
             html.append("        </div>\n");
             html.append("    </div>\n");
 
             // Mobile grid (1 column)
             html.append("    <div class=\"d-md-none\">\n");
-            html.append("        <div class=\"row g-2\">\n");
+            html.append("        <div class=\"row no-gutters g-2\">\n");
 
-            buildMobileGrid(html, widgetsNode, itemsNode);
+            buildMobileGrid(user, html, widgetsNode, itemsNode);
 
             html.append("        </div>\n");
             html.append("    </div>\n");
@@ -118,9 +151,24 @@ public class PageBuilder {
         }
     }
 
-    private static void buildDesktopGrid(StringBuilder html, JsonNode widgetsNode, JsonNode itemsNode, int columns) {
+    public String buildPageById(User user, String id) throws JsonProcessingException {
+        try {
+            // Load dashboard definition from file based on ID
+            String dashboardJson = loadDashboardDefinitionById(user, id);
+            if (dashboardJson == null) {
+                throw new JsonProcessingException("Dashboard definition not found for ID: " + id) {
+                };
+            }
+            return buildPage(user, dashboardJson);
+        } catch (IOException e) {
+            throw new JsonProcessingException("Failed to load dashboard definition for ID: " + id, e) {
+            };
+        }
+    }
+
+    private void buildDesktopGrid(User user, StringBuilder html, JsonNode widgetsNode, JsonNode itemsNode,
+            int columns) {
         // Create a grid representation
-        // List<GridItem> gridItems = new ArrayList<>();
         List<Widget> widgets = new ArrayList<>();
 
         for (int i = 0; i < itemsNode.size() && i < widgetsNode.size(); i++) {
@@ -141,8 +189,6 @@ public class PageBuilder {
         }
 
         // Sort by row (y) then column (x)
-        // gridItems.sort(Comparator.comparingInt((GridItem item) ->
-        // item.y).thenComparingInt(item -> item.x));
         widgets.sort(Comparator.comparingInt((Widget item) -> item.y).thenComparingInt(item -> item.x));
 
         // Group by rows
@@ -157,7 +203,7 @@ public class PageBuilder {
             }
 
             if (!rowItems.isEmpty()) {
-                html.append("            <div class=\"row mb-3\">\n");
+                html.append("            <div class=\"row no-gutters mb-3\">\n");
 
                 // Create columns for this row
                 for (Widget item : rowItems) {
@@ -172,7 +218,7 @@ public class PageBuilder {
 
                         // First row of the nested grid - contains the widget content
                         html.append("                            <div class=\"col-12 mb-2\">\n");
-                        html.append(getWidgetContent(item));
+                        html.append(getWidgetContent(user, item));
                         html.append("                            </div>\n");
 
                         // Additional rows for the remaining height
@@ -187,7 +233,7 @@ public class PageBuilder {
                     } else {
                         // Standard single-row widget
                         html.append("                    <div class=\"widget-card h-100\">\n");
-                        html.append(getWidgetContent(item));
+                        html.append(getWidgetContent(user, item));
                         html.append("                    </div>\n");
                     }
 
@@ -202,30 +248,13 @@ public class PageBuilder {
         }
     }
 
-    private static void buildMobileGrid(StringBuilder html, JsonNode widgetsNode, JsonNode itemsNode) {
-        // List<MobileWidget> mobileWidgets = new ArrayList<>();
+    private void buildMobileGrid(User user, StringBuilder html, JsonNode widgetsNode, JsonNode itemsNode) {
         List<Widget> widgets = new ArrayList<>();
 
         for (int i = 0; i < itemsNode.size() && i < widgetsNode.size(); i++) {
             JsonNode widgetNode = widgetsNode.path(i);
             JsonNode itemNode = itemsNode.path(i);
 
-            /*
-             * String mobileSize = widgetNode.path("mobile_size").asText("1");
-             * 
-             * // Skip if mobile_size is 0 (hidden on mobile)
-             * if ("0".equals(mobileSize)) {
-             * continue;
-             * }
-             * 
-             * int mobilePosition = widgetNode.path("mobile_position").asInt(-1);
-             * int height = Integer.parseInt(mobileSize);
-             * String widgetTitle = getWidgetTitle(widgetNode);
-             * String widgetType = getWidgetType(widgetNode);
-             * 
-             * mobileWidgets.add(new MobileWidget(mobilePosition, height, widgetTitle, i,
-             * widgetType));
-             */
             String mSize = widgetNode.path("mobile_size").asText("1");
             int mobileSize = 0;
             try {
@@ -239,79 +268,25 @@ public class PageBuilder {
             widgets.add(new Widget(widgetNode, itemNode, i));
         }
 
-        // Sort by mobile_position if specified, otherwise by original index
-        // mobileWidgets.sort(Comparator
-        // .comparingInt((MobileWidget w) -> w.mobilePosition >= 0 ? w.mobilePosition :
-        // Integer.MAX_VALUE)
-        // .thenComparingInt(w -> w.originalIndex));
-
         widgets.sort(Comparator
                 .comparingInt((Widget w) -> w.mobilePosition >= 0 ? w.mobilePosition : Integer.MAX_VALUE)
                 .thenComparingInt(w -> w.originalIndex));
 
         // Generate mobile widgets
-        // for (MobileWidget widget : mobileWidgets) {
         for (Widget widget : widgets) {
             html.append("            <div class=\"col-12 mb-2\">\n");
             html.append("                <div class=\"widget-card\">\n");
-            html.append(getWidgetContent(widget));
+            html.append(getWidgetContent(user, widget));
             html.append("                </div>\n");
             html.append("            </div>\n");
         }
     }
 
-    /*
-     * private static String getWidgetContent(GridItem item) {
-     * StringBuilder content = new StringBuilder();
-     * if (item.title != null && !item.title.isEmpty()) {
-     * content.append("<div class=\"widget-title\">" + escapeHtml(item.title) +
-     * "</div>\n");
-     * }
-     * content.append("<div class=\"widget-content\">");
-     * content.append(WidgetBuilder.buildWidget(WidgetType.valueOf(item.type.
-     * toLowerCase())));
-     * content.append("</div>\n");
-     * return content.toString();
-     * }
-     */
-
-    private static String getWidgetContent(Widget item) {
-        StringBuilder content = new StringBuilder();
-        if (item.title != null && !item.title.isEmpty()) {
-            content.append("<div class=\"widget-title\">" + escapeHtml(item.title) + "</div>\n");
-        }
-        content.append("<div class=\"widget-content\">");
-        WidgetType widgetType;
-        try {
-            widgetType = WidgetType.valueOf(item.type.toLowerCase());
-        } catch (IllegalArgumentException e) {
-            widgetType = null; // Unknown type
-        }
-        if (widgetType != null) {
-            content.append(WidgetBuilder.buildWidget(widgetType));
-        } else {
-            content.append("<div class=\"text-muted\">Unknown widget type: " + escapeHtml(item.type) + "</div>");
-        }
-        content.append("</div>\n");
-        return content.toString();
+    private String getWidgetContent(User user, Widget item) {
+        return widgetBuilder.buildWidget(user, item);
     }
 
-    /*
-     * private static String getWidgetContent(MobileWidget item) {
-     * StringBuilder content = new StringBuilder();
-     * if (item.title != null && !item.title.isEmpty()) {
-     * content.append("<div class=\"widget-title\">" + escapeHtml(item.title) +
-     * "</div>\n");
-     * }
-     * content.append("<div class=\"widget-content\">");
-     * content.append(WidgetBuilder.buildWidget(WidgetType.valueOf(item.type.
-     * toLowerCase())));
-     * content.append("</div>\n");
-     * return content.toString();
-     * }
-     */
-
-    private static String getWidgetTitle(JsonNode widgetNode) {
+    private String getWidgetTitle(JsonNode widgetNode) {
         // Try different fields for title
         String title = widgetNode.path("title").asText();
         if (title == null || title.isEmpty()) {
@@ -326,7 +301,7 @@ public class PageBuilder {
         return title;
     }
 
-    private static String getWidgetType(JsonNode widgetNode) {
+    private String getWidgetType(JsonNode widgetNode) {
         String type = widgetNode.path("type").asText();
         if (type == null || type.isEmpty()) {
             type = "unknown";
@@ -334,7 +309,7 @@ public class PageBuilder {
         return type;
     }
 
-    private static String escapeHtml(String text) {
+    private String escapeHtml(String text) {
         if (text == null) {
             return "";
         }
@@ -346,75 +321,21 @@ public class PageBuilder {
                 .replace("'", "&#39;");
     }
 
-    /**
-     * Represents a grid item for desktop layout
-     */
-    /*
-     * private static class GridItem {
-     * int x, y, w, h;
-     * String title;
-     * String type;
-     * 
-     * GridItem(int x, int y, int w, int h, String title, String type) {
-     * this.x = x;
-     * this.y = y;
-     * this.w = w;
-     * this.h = h;
-     * this.title = title;
-     * this.type = type;
-     * }
-     * }
-     */
-
-    /**
-     * Represents a widget for mobile layout
-     */
-    /*
-     * private static class MobileWidget {
-     * int mobilePosition;
-     * int height;
-     * String title;
-     * String type;
-     * int originalIndex;
-     * 
-     * MobileWidget(int mobilePosition, int height, String title, int originalIndex,
-     * String type) {
-     * this.mobilePosition = mobilePosition;
-     * this.height = height;
-     * this.title = title;
-     * this.originalIndex = originalIndex;
-     * this.type = type;
-     * }
-     * }
-     */
-
-    private static class Widget {
-        int x, y, w, h;
-        int mobilePosition, mobileSize, height;
-        String title;
-        String type;
-        int originalIndex;
-
-        Widget(JsonNode widgetsNode, JsonNode itemsNode, int originalIndex) {
-            this.originalIndex = originalIndex;
-
-            x = itemsNode.path("_el10").path("x").asInt(0);
-            y = itemsNode.path("_el10").path("y").asInt(0);
-            w = itemsNode.path("_el10").path("w").asInt(1);
-            h = itemsNode.path("_el10").path("h").asInt(1);
-
-            title = getWidgetTitle(widgetsNode);
-            type = getWidgetType(widgetsNode);
-            String mSize = widgetsNode.path("mobile_size").asText("1");
-
-            mobilePosition = widgetsNode.path("mobile_position").asInt(-1);
-            try {
-                height = Integer.parseInt(mSize);
-            } catch (NumberFormatException e) {
-                height = 1; // Default height if parsing fails
-            }
-
+    private String loadDashboardDefinitionById(User user, String id) throws IOException {
+        Dashboard dashboard = null;
+        try {
+            dashboard = dashboardDao.getDashboard(id);
+        } catch (IotDatabaseException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
-
+        if (dashboard == null) {
+            return null;
+        }
+        // Check if user has access to this dashboard
+        // TODO
+        // convert dashboard definition to JSON string
+        String dashboardJson = objectMapper.writeValueAsString(dashboard);
+        return dashboardJson;
     }
 }

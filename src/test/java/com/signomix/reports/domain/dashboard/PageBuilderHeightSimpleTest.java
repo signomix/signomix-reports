@@ -25,7 +25,8 @@ public class PageBuilderHeightSimpleTest {
                 + "]"
                 + "}";
             
-            String html = PageBuilder.buildPage(dashboardJson);
+            PageBuilder pageBuilder = new PageBuilder();
+            String html = pageBuilder.buildPage(null, dashboardJson);
             
             // Basic validation
             if (html == null || html.isEmpty()) {

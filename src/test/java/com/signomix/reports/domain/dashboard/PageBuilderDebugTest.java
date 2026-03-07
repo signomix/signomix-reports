@@ -27,7 +27,8 @@ public class PageBuilderDebugTest {
                 + "]"
                 + "}";
             
-            String html = PageBuilder.buildPage(dashboardJson);
+            PageBuilder pageBuilder = new PageBuilder();
+            String html = pageBuilder.buildPage(null, dashboardJson);
             
             // Save to file for inspection
             Files.write(Paths.get("target/height-test.html"), html.getBytes());

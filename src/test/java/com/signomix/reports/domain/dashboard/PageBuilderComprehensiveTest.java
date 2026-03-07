@@ -18,7 +18,8 @@ public class PageBuilderComprehensiveTest {
             // Create a dashboard with widgets of different heights
             String dashboardJson = createTestDashboard();
             
-            String html = PageBuilder.buildPage(dashboardJson);
+            PageBuilder pageBuilder = new PageBuilder();
+            String html = pageBuilder.buildPage(null, dashboardJson);
             
             // Save HTML for manual inspection
             Files.write(Paths.get("target/comprehensive-test.html"), html.getBytes());
