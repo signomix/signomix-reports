@@ -14,7 +14,7 @@ public class PageBuilderManualTest {
                 Paths.get("doc/dashboard_defiinition_example1.json")));
             
             PageBuilder pageBuilder = new PageBuilder();
-            String html = pageBuilder.buildPage(null,  dashboardJson);
+            String html = pageBuilder.buildPage(null,  dashboardJson, true, true);
             
             // Basic validation
             if (html == null || html.isEmpty()) {
@@ -67,7 +67,9 @@ public class PageBuilderManualTest {
                 + "]"
                 + "}";
             
-            String simpleHtml = pageBuilder.buildPage(null, simpleJson);
+            String simpleHtml = pageBuilder.buildPage(null, simpleJson, true, true);
+            
+             // Basic validation
             
             boolean simpleHasTitle = simpleHtml.contains("Test Dashboard");
             boolean simpleHasWidget1 = simpleHtml.contains("Widget 1");

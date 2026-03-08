@@ -45,6 +45,8 @@ public class PageBuilder {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    private static final String COPYRIGHT = "<span style=\"font-size: 1.0rem;\" >created with&nbsp;</span><a style=\"font-size: 1.0rem;\" href=\"https://signomix.com\" target=\"_blank\">Signomix IoT platform</a>";
+
     void onStart(@Observes StartupEvent ev) {
         dashboardDao = new DashboardDao();
         dashboardDao.setDatasource(oltpDs);
@@ -58,8 +60,9 @@ public class PageBuilder {
      * @return HTML string with responsive grid layout
      * @throws JsonProcessingException if JSON parsing fails
      */
-    public String buildPage(User user, String dashboardJson) throws JsonProcessingException {
-        return buildPage(user, dashboardJson, 10, true);
+    public String buildPage(User user, String dashboardJson, boolean header, boolean title)
+            throws JsonProcessingException {
+        return buildPage(user, dashboardJson, 10, header, title);
     }
 
     /**
@@ -72,7 +75,7 @@ public class PageBuilder {
      * @return HTML string with responsive grid layout
      * @throws JsonProcessingException if JSON parsing fails
      */
-    public String buildPage(User user, String dashboardJson, int columns, boolean withHeader)
+    public String buildPage(User user, String dashboardJson, int columns, boolean withHeader, boolean withTitle)
             throws JsonProcessingException {
         try {
             JsonNode rootNode = objectMapper.readTree(dashboardJson);
@@ -94,30 +97,32 @@ public class PageBuilder {
                 html.append(
                         "    <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css\" rel=\"stylesheet\">\n");
                 html.append("    <style>\n");
-                html.append("        body { padding: 20px; }\n");
-                html.append("        .dashboard-title { margin-bottom: 20px; }\n");
-                html.append(
-                        "        .widget-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; height: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n");
-                html.append("        .widget-title {  margin-bottom: 10px; font-size: 1.0rem; }\n");
-                html.append("        .widget-content { font-weight: bold; font-size: 1.6rem; color: #000000; }\n");
-                html.append("        .widget-no-data { font-size: 1.0rem; color: #868585; }\n");
-                html.append("        .widget-error { font-size: 1.0rem; color: #ff0000; }\n");
-                html.append("        /* Custom 10-column grid for desktop */\n");
-                html.append("        @media (min-width: 768px) {\n");
+                html.append("     body { padding: 20px; }\n");
+                html.append("     .dashboard-title { margin-bottom: 20px; }\n");
+                html.append("     .widget-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; height: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n");
+                html.append("    .widget-title {  margin-bottom: 10px; font-size: 1.0rem; }\n");
+                html.append("    .dashboard-footer { font-size: .5rem; }\n");
+                html.append("    .widget-content { font-weight: bold; font-size: 1.6rem; color: #000000; }\n");
+                html.append("    .widget-no-data { font-size: 1.0rem; color: #868585; }\n");
+                html.append("    .widget-error { font-size: 1.0rem; color: #ff0000; }\n");
+                html.append("     /* Custom 10-column grid for desktop */\n");
+                html.append("     @media (min-width: 768px) {\n");
                 for (int i = 1; i <= columns; i++) {
                     int percentage = (i * 100) / columns;
                     html.append("            .col-" + columns + "-" + i + " { width: " + percentage + "%; }\n");
                 }
-                html.append("        }\n");
+                html.append("     }\n");
                 html.append("    </style>\n");
                 html.append("</head>\n");
                 html.append("<body>\n");
             }
 
             // Dashboard title
-            html.append("    <div class=\"dashboard-title\">\n");
-            html.append("        <h1>" + escapeHtml(title) + "</h1>\n");
-            html.append("    </div>\n");
+            if (withTitle) {
+                html.append("    <div class=\"dashboard-title\">\n");
+                html.append("        <h1>" + escapeHtml(title) + "</h1>\n");
+                html.append("    </div>\n");
+            }
 
             // Desktop grid (configurable columns)
             html.append("    <div class=\"d-none d-md-block\">\n");
@@ -137,6 +142,11 @@ public class PageBuilder {
             html.append("        </div>\n");
             html.append("    </div>\n");
 
+            // Copyright footer
+            html.append("    <div class=\"dashboard-footer\">\n");
+            html.append("        <h1>" + COPYRIGHT + "</h1>\n");
+            html.append("    </div>\n");
+
             if (withHeader) {
                 // Bootstrap JS bundle
                 html.append(
@@ -151,7 +161,8 @@ public class PageBuilder {
         }
     }
 
-    public String buildPageById(User user, String id) throws JsonProcessingException {
+    public String buildPageById(User user, String id, boolean withHeader, boolean withTitle)
+            throws JsonProcessingException {
         try {
             // Load dashboard definition from file based on ID
             String dashboardJson = loadDashboardDefinitionById(user, id);
@@ -159,7 +170,7 @@ public class PageBuilder {
                 throw new JsonProcessingException("Dashboard definition not found for ID: " + id) {
                 };
             }
-            return buildPage(user, dashboardJson);
+            return buildPage(user, dashboardJson, 10, withHeader, withTitle);
         } catch (IOException e) {
             throw new JsonProcessingException("Failed to load dashboard definition for ID: " + id, e) {
             };

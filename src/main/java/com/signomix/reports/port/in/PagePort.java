@@ -19,9 +19,9 @@ public class PagePort {
     PageBuilder pageBuilder;
 
 
-    public String getPageSource(User user, String definition) {
+    public String getPageSource(User user, String definition, boolean header, boolean title) {
         try {
-            return pageBuilder.buildPage(user,definition);
+            return pageBuilder.buildPage(user,definition, header, title);
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -29,9 +29,9 @@ public class PagePort {
         }
     }
 
-    public String getPageSourceById(User user, String id) {
+    public String getPageSourceById(User user, String id, boolean header, boolean title) {
         try {
-            return pageBuilder.buildPageById(user, id);
+            return pageBuilder.buildPageById(user, id, header, title);
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
