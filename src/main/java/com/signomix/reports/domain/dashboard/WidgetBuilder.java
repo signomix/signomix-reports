@@ -1,15 +1,13 @@
 package com.signomix.reports.domain.dashboard;
 
-import org.jboss.logging.Logger;
-
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.port.in.ReportPort;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class WidgetBuilder {
@@ -20,22 +18,25 @@ public class WidgetBuilder {
     @Inject
     ReportPort reportPort;
 
-    public String buildWidget(User user, Widget widget) {
+    public String buildWidget(User user, Widget widget, String timeZone) {
         StringBuilder content = new StringBuilder();
         if (widget.title != null && !widget.title.isEmpty()) {
-            content.append("<div class=\"widget-title\">")
-            .append(escapeHtml(widget.title))
-            .append("</div>\n");
+            content
+                .append("<div class=\"widget-title\">")
+                .append(escapeHtml(widget.title))
+                .append("</div>\n");
         }
         switch (widget.type) {
             case "text":
                 content.append(buildTextWidget(user, widget.description));
                 break;
             case "symbol":
-                content.append(buildSymbolWidget(user, widget));
+                content.append(buildSymbolWidget(user, widget, timeZone));
                 break;
             default:
-                content.append("unknown widget type: " + escapeHtml(widget.type));
+                content.append(
+                    "unsupported widget type: " + escapeHtml(widget.type)
+                );
                 break;
         }
         return content.toString();
@@ -47,14 +48,14 @@ public class WidgetBuilder {
         content.append("<div class=\"widget-text\">");
         //content.append(escapeHtml(text));
         // sanitize text to allow only basic HTML tags like <b>, <i>, <u>, <br>, <p>
-        // and escape the rest  
+        // and escape the rest
         text = text.replaceAll("(?i)<(?!/?(b|i|u|br|p)\\b)[^>]*>", "");
         content.append(text);
         content.append("</div>");
         return content.toString();
     }
 
-    public String buildSymbolWidget(User user, Widget widget) {
+    public String buildSymbolWidget(User user, Widget widget, String timeZone) {
         String errorString = null;
         logger.info("Building symbol widget with query: " + widget.query);
         DataQuery query = null;
@@ -65,20 +66,39 @@ public class WidgetBuilder {
             e.printStackTrace();
         }
         if (query == null) {
-            return "<div class=\"widget-error\">" + "error parsing query" + "</div>\n";
+            return (
+                "<div class=\"widget-error\">" +
+                "error parsing query" +
+                "</div>\n"
+            );
         }
         String unitName = widget.unitName != null ? widget.unitName : "";
         logger.info("Unit name: " + unitName);
-        Double value = getSingleValue(user, query);
-        if(value == null) {
+        //Double value = getSingleValue(user, query);
+        //Long timesamp = getTimestamp(user, query);
+        Measurement measurement = getSingleValue(user, query);
+        if (measurement == null || measurement.value() == null) {
             return "<div class=\"widget-no-data\">" + "no data" + "</div>\n";
         }
         int rounding = 2;
-        value = Math.round(value * Math.pow(10, rounding)) / Math.pow(10, rounding);
+        double value =
+            Math.round(measurement.value() * Math.pow(10, rounding)) /
+            Math.pow(10, rounding);
         // format value as text
         String valueText = String.format("%." + rounding + "f", value);
         valueText = valueText + " " + unitName;
-        return "<div class=\"widget-content\">" + valueText + "</div>\n";
+        String tstamp = getTimestampFormatted(
+            measurement.timestamp(),
+            timeZone
+        );
+        return (
+            "<div class=\"widget-content\">" +
+            valueText +
+            "</div>\n" +
+            "<div class=\"widget-info\">" +
+            tstamp +
+            "</div>\n"
+        );
     }
 
     private static String escapeHtml(String text) {
@@ -86,31 +106,57 @@ public class WidgetBuilder {
             return "";
         }
         return text
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 
-    private Double getSingleValue(User user, DataQuery query) {
-        ReportResult result =reportPort.getReportResult(query, user);
-        if(result.status != 200) {
+    private Measurement getSingleValue(User user, DataQuery query) {
+        ReportResult result = reportPort.getReportResult(query, user);
+        if (result.status != 200) {
             logger.error("Error executing query: " + result.errorMessage);
             return null;
         }
         String channel = query.getChannels().get(0);
         int index = result.headers.get(0).columns.indexOf(channel);
-        if(index == -1) {
+        if (index == -1) {
             logger.error("Channel not found in result: " + channel);
             return null;
         }
-        if(result.datasets.size() == 0 || result.datasets.get(0).data.size() == 0) {
+        if (
+            result.datasets.size() == 0 ||
+            result.datasets.get(0).data.size() == 0
+        ) {
             logger.warn("Query returned no data for channel: " + channel);
             return null;
         }
-        double value = (Double) result.datasets.get(0).data.get(0).values.get(index);
-        return value;
+        Measurement measurement = null;
+        double value;
+        long ts;
+        try {
+            value = (Double) result.datasets
+                .get(0)
+                .data.get(0)
+                .values.get(index);
+            ts = (Long) result.datasets.get(0).data.get(0).timestamp;
+            measurement = new Measurement(ts, value);
+        } catch (Exception e) {
+            logger.warn(e.getMessage());
+        }
+
+        return measurement;
     }
 
+    private String getTimestampFormatted(long timestamp, String timeZone) {
+        String formatted;
+        // format timestamp as date and time
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(
+            "yyyy-MM-dd HH:mm:ss"
+        );
+        sdf.setTimeZone(java.util.TimeZone.getTimeZone(timeZone));
+        formatted = sdf.format(new java.util.Date(timestamp));
+        return formatted;
+    }
 }

@@ -1,12 +1,9 @@
 package com.signomix.reports.adapter.in;
 
-import org.jboss.logging.Logger;
-
 import com.signomix.common.User;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.port.in.AuthPort;
 import com.signomix.reports.port.in.PagePort;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -16,6 +13,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
+import java.sql.Array;
+import java.util.ArrayList;
+import java.util.TimeZone;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 @Path("/api/reports")
@@ -32,8 +33,12 @@ public class PageApi {
 
     @Path("/page")
     @POST
-    public Response getPage(@HeaderParam("Authentication") String token,
-            String definition, @QueryParam("header") Boolean header, @QueryParam("title") Boolean title) {
+    public Response getPage(
+        @HeaderParam("Authentication") String token,
+        String definition,
+        @QueryParam("header") Boolean header,
+        @QueryParam("title") Boolean title
+    ) {
         User user = authPort.getUser(token);
         if (user == null) {
             ReportResult result = new ReportResult();
@@ -42,8 +47,13 @@ public class PageApi {
             return Response.ok().entity(result).build();
             // return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-        String pageSource = pagePort.getPageSource(user, definition, header==null ? true : header, title==null ? true : title);
-        if(pageSource == null) {
+        String pageSource = pagePort.getPageSource(
+            user,
+            definition,
+            header == null ? true : header,
+            title == null ? true : title
+        );
+        if (pageSource == null) {
             ReportResult result = new ReportResult();
             result.status = 400;
             result.errorMessage = "Invalid page definition";
@@ -54,8 +64,13 @@ public class PageApi {
 
     @Path("/page/{id}")
     @GET
-    public Response getPageById(@HeaderParam("Authentication") String token,
-            @PathParam("id") String id, @QueryParam("header") Boolean header, @QueryParam("title") Boolean title) {
+    public Response getPageById(
+        @HeaderParam("Authentication") String token,
+        @PathParam("id") String id,
+        @QueryParam("header") Boolean header,
+        @QueryParam("title") Boolean title,
+        @QueryParam("timeZone") String timeZone
+    ) {
         User user = authPort.getUser(token);
         if (user == null) {
             ReportResult result = new ReportResult();
@@ -63,8 +78,26 @@ public class PageApi {
             result.errorMessage = "Unauthorized";
             return Response.ok().entity(result).build();
         }
-        String pageSource = pagePort.getPageSourceById(user, id, header==null ? true : header, title==null ? true : title);
-        if(pageSource == null) {
+        String timeZoneName = timeZone != null ? timeZone : "UTC";
+        // validate timeZoneName
+        ArrayList<String> availableTimeZones = new ArrayList<>();
+        for (String tz : TimeZone.getAvailableIDs()) {
+            availableTimeZones.add(tz);
+        }
+        if (!availableTimeZones.contains(timeZoneName)) {
+            ReportResult result = new ReportResult();
+            result.status = 400;
+            result.errorMessage = "Invalid time zone";
+            return Response.ok().entity(result).build();
+        }
+        String pageSource = pagePort.getPageSourceById(
+            user,
+            id,
+            header == null ? true : header,
+            title == null ? true : title,
+            timeZone != null ? timeZone : "UTC"
+        );
+        if (pageSource == null) {
             ReportResult result = new ReportResult();
             result.status = 400;
             result.errorMessage = "Invalid page ID";
