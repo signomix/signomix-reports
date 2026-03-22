@@ -7,7 +7,6 @@ import com.signomix.common.User;
 import com.signomix.common.db.DashboardDao;
 import com.signomix.common.db.IotDatabaseException;
 import com.signomix.common.gui.Dashboard;
-import com.signomix.common.tsdb.ReportDao;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.runtime.StartupEvent;
@@ -18,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
@@ -39,6 +39,9 @@ public class PageBuilder {
     AgroalDataSource oltpDs;
 
     DashboardDao dashboardDao;
+
+    @ConfigProperty(name = "signomix.organization.default")
+    Long defaultOrganizationId;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -437,8 +440,16 @@ public class PageBuilder {
         if (dashboard == null) {
             return null;
         }
-        // Check if user has access to this dashboard
-        // TODO
+        // Check if user has access to this dashboard:
+        // - user is the owner of the dashboard (dashboard.getUserID() == user.uid)
+        // - or user organization is not default one and user belongs to the same organization as the dashboard
+        if (
+            !(dashboard.getUserID().equals(user.uid)) ||
+            (dashboard.getOrganizationId() != defaultOrganizationId &&
+                dashboard.getOrganizationId() == user.organization.longValue())
+        ) {
+            return null; // User does not have access
+        }
         // convert dashboard definition to JSON string
         String dashboardJson = objectMapper.writeValueAsString(dashboard);
         return dashboardJson;
