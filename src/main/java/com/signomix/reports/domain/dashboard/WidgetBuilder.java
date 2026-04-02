@@ -33,6 +33,9 @@ public class WidgetBuilder {
             case "symbol":
                 content.append(buildSymbolWidget(user, widget, timeZone));
                 break;
+            case "led":
+                content.append(buildLedWidget(user, widget, timeZone));
+                break;
             default:
                 content.append(
                     "unsupported widget type: " + escapeHtml(widget.type)
@@ -99,6 +102,74 @@ public class WidgetBuilder {
             tstamp +
             "</div>\n"
         );
+    }
+
+    public String buildLedWidget(User user, Widget widget, String timeZone) {
+        String errorString = null;
+        logger.info("Building LED widget with query: " + widget.query);
+        DataQuery query = null;
+        try {
+            query = DataQuery.parse(widget.query);
+        } catch (DataQueryException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        if (query == null) {
+            return (
+                "<div class=\"widget-error\">" +
+                "error parsing query" +
+                "</div>\n"
+            );
+        }
+        String iconDef = widget.icon != null ? widget.icon : "";
+        String[] icons = iconDef.split(",");
+        String alertRule = widget.rule != null ? widget.rule : "";
+
+        Measurement measurement = getSingleValue(user, query);
+        if (measurement == null || measurement.value() == null) {
+            return "<div class=\"widget-no-data\">" + "no data" + "</div>\n";
+        }
+        int rounding = 2;
+        double value =
+            Math.round(measurement.value() * Math.pow(10, rounding)) /
+            Math.pow(10, rounding);
+
+        String iconName = "";
+        // format value as text
+        String valueText = getIconText(value, alertRule, icons);
+        String tstamp = getTimestampFormatted(
+            measurement.timestamp(),
+            timeZone
+        );
+        return (
+            "<div class=\"widget-content\">" +
+            valueText +
+            "</div>\n" +
+            "<div class=\"widget-info\">" +
+            tstamp +
+            "</div>\n"
+        );
+    }
+
+    private String getIconText(double value, String alertRule, String[] icons) {
+        String[] iconNames = {
+            "bi-emoji-smile",
+            "bi-emoji-neutral",
+            "bi-emoji-frown",
+            "bi-emoji-expressionless",
+        };
+        // String[] iconNames = new String[4];
+        // iconNames[0] = "bi-emoji-smile-fill";
+        // iconNames[1] = "bi-emoji-neutral-fill";
+        // iconNames[2] = "bi-emoji-frown-fill";
+        // iconNames[3] = "bi-emoji-expressionless-fill";
+        for (int i = 0; i < icons.length; i++) {
+            if (!icons[i].trim().isEmpty()) iconNames[i] = icons[i].trim();
+        }
+        //TODO: get alert level based on alert rule and value
+        //TODO: get icon name based on alert level
+        //TODO: get color based on alert level
+        return "<i class=\"h3 bi " + iconNames[0] + "\"></i>";
     }
 
     private static String escapeHtml(String text) {

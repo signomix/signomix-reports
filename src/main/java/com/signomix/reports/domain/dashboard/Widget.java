@@ -3,6 +3,7 @@ package com.signomix.reports.domain.dashboard;
 import com.fasterxml.jackson.databind.JsonNode;
 
 class Widget {
+
     int x, y, w, h;
     int mobilePosition, mobileSize, height;
     String title;
@@ -11,6 +12,10 @@ class Widget {
     String query;
     String unitName;
     String description;
+    String icon;
+    String rule;
+    String dev_id;
+    String channel;
 
     Widget(JsonNode widgetsNode, JsonNode itemsNode, int originalIndex) {
         this.originalIndex = originalIndex;
@@ -25,6 +30,10 @@ class Widget {
         query = widgetsNode.path("query").asText();
         unitName = widgetsNode.path("unitName").asText();
         description = widgetsNode.path("description").asText();
+        icon = widgetsNode.path("icon").asText();
+        rule = widgetsNode.path("rule").asText();
+        dev_id = widgetsNode.path("dev_id").asText();
+        channel = widgetsNode.path("channel").asText();
         String mSize = widgetsNode.path("mobile_size").asText("1");
 
         mobilePosition = widgetsNode.path("mobile_position").asInt(-1);
@@ -33,7 +42,14 @@ class Widget {
         } catch (NumberFormatException e) {
             height = 1; // Default height if parsing fails
         }
-
+        if (query == null || query.isEmpty()) {
+            query =
+                "report DqlReport eui " +
+                dev_id +
+                " channel " +
+                channel +
+                " last 1";
+        }
     }
 
     private String getWidgetTitle(JsonNode widgetNode) {

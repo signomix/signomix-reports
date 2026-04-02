@@ -110,6 +110,9 @@ public class PageBuilder {
                 html.append(
                     "    <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css\" rel=\"stylesheet\">\n"
                 );
+                html.append(
+                    "    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css\">\n"
+                );
                 html.append("    <style>\n");
                 html.append("     body { padding: 20px; }\n");
                 html.append("     .dashboard-title { margin-bottom: 20px; }\n");
