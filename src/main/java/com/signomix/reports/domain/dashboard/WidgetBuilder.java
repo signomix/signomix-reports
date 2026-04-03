@@ -4,6 +4,7 @@ import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.ReportResult;
+import com.signomix.reports.domain.AlertLevelService;
 import com.signomix.reports.port.in.ReportPort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -17,6 +18,9 @@ public class WidgetBuilder {
 
     @Inject
     ReportPort reportPort;
+
+    @Inject
+    AlertLevelService alertLevelService;
 
     public String buildWidget(User user, Widget widget, String timeZone) {
         StringBuilder content = new StringBuilder();
@@ -136,7 +140,12 @@ public class WidgetBuilder {
 
         String iconName = "";
         // format value as text
-        String valueText = getIconText(value, alertRule, icons);
+        String valueText = getIconText(
+            value,
+            measurement.timestamp(),
+            alertRule,
+            icons
+        );
         String tstamp = getTimestampFormatted(
             measurement.timestamp(),
             timeZone
@@ -151,14 +160,18 @@ public class WidgetBuilder {
         );
     }
 
-    private String getIconText(double value, String alertRule, String[] icons) {
+    private String getIconText(
+        double value,
+        Long timestamp,
+        String alertRule,
+        String[] icons
+    ) {
         String[] iconNames = {
             "bi-emoji-smile",
             "bi-emoji-neutral",
             "bi-emoji-frown",
             "bi-emoji-expressionless",
         };
-        // String[] iconNames = new String[4];
         // iconNames[0] = "bi-emoji-smile-fill";
         // iconNames[1] = "bi-emoji-neutral-fill";
         // iconNames[2] = "bi-emoji-frown-fill";
@@ -166,10 +179,15 @@ public class WidgetBuilder {
         for (int i = 0; i < icons.length; i++) {
             if (!icons[i].trim().isEmpty()) iconNames[i] = icons[i].trim();
         }
-        //TODO: get alert level based on alert rule and value
-        //TODO: get icon name based on alert level
+        int alertLevel = alertLevelService.getAlertLevel(
+            alertRule,
+            value,
+            timestamp
+        );
+        int index =
+            alertLevel >= 0 && alertLevel < iconNames.length ? alertLevel : 3;
         //TODO: get color based on alert level
-        return "<i class=\"h3 bi " + iconNames[0] + "\"></i>";
+        return "<i class=\"h3 bi " + iconNames[index] + "\"></i>";
     }
 
     private static String escapeHtml(String text) {

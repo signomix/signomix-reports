@@ -31,7 +31,7 @@ class Widget {
         unitName = widgetsNode.path("unitName").asText();
         description = widgetsNode.path("description").asText();
         icon = widgetsNode.path("icon").asText();
-        rule = widgetsNode.path("rule").asText();
+        rule = widgetsNode.path("range").asText();
         dev_id = widgetsNode.path("dev_id").asText();
         channel = widgetsNode.path("channel").asText();
         String mSize = widgetsNode.path("mobile_size").asText("1");
