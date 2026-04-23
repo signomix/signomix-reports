@@ -1,11 +1,13 @@
 package com.signomix.reports.port.in;
 
+import org.jboss.logging.Logger;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.signomix.common.User;
 import com.signomix.reports.domain.dashboard.PageBuilder;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class PagePort {
@@ -20,10 +22,11 @@ public class PagePort {
         User user,
         String definition,
         boolean header,
-        boolean title
+        boolean title,
+        String timeZone
     ) {
         try {
-            return pageBuilder.buildPage(user, definition, header, title);
+            return pageBuilder.buildPage(user, definition, header, title, timeZone);
         } catch (JsonProcessingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

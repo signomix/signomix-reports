@@ -14,7 +14,7 @@ public class PageBuilderManualTest {
                 Paths.get("doc/dashboard_defiinition_example1.json")));
             
             PageBuilder pageBuilder = new PageBuilder();
-            String html = pageBuilder.buildPage(null,  dashboardJson, true, true);
+            String html = pageBuilder.buildPage(null,  dashboardJson, true, true, "UTC");
             
             // Basic validation
             if (html == null || html.isEmpty()) {
@@ -67,7 +67,7 @@ public class PageBuilderManualTest {
                 + "]"
                 + "}";
             
-            String simpleHtml = pageBuilder.buildPage(null, simpleJson, true, true);
+            String simpleHtml = pageBuilder.buildPage(null, simpleJson, true, true, "UTC");
             
              // Basic validation
             

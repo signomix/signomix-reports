@@ -19,7 +19,7 @@ public class PageBuilderComprehensiveTest {
             String dashboardJson = createTestDashboard();
             
             PageBuilder pageBuilder = new PageBuilder();
-            String html = pageBuilder.buildPage(null, dashboardJson, true, true);
+            String html = pageBuilder.buildPage(null, dashboardJson, true, true, "UTC");
             
             // Save HTML for manual inspection
             Files.write(Paths.get("target/comprehensive-test.html"), html.getBytes());

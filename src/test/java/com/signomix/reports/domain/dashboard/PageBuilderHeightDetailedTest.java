@@ -26,7 +26,7 @@ public class PageBuilderHeightDetailedTest {
                 + "}";
             
             PageBuilder pageBuilder = new PageBuilder();
-            String html = pageBuilder.buildPage(null, dashboardJson, true, true);
+            String html = pageBuilder.buildPage(null, dashboardJson, true, true, "UTC");
             
             // Basic validation
             if (html == null || html.isEmpty()) {

@@ -16,7 +16,7 @@ public class GenerateExampleDashboard {
             
             // Generate HTML using PageBuilder
             PageBuilder pageBuilder = new PageBuilder();
-            String html = pageBuilder.buildPage(null,dashboardJson, true, true);
+            String html = pageBuilder.buildPage(null,dashboardJson, true, true, "UTC");
             
             // Save to output file
             Files.write(Paths.get("doc/dashboard_defiinition_example1.html"), html.getBytes());

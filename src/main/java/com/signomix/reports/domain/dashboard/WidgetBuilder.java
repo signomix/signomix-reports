@@ -1,14 +1,16 @@
 package com.signomix.reports.domain.dashboard;
 
+import org.jboss.logging.Logger;
+
 import com.signomix.common.User;
 import com.signomix.common.db.DataQuery;
 import com.signomix.common.db.DataQueryException;
 import com.signomix.common.db.ReportResult;
 import com.signomix.reports.domain.AlertLevelService;
 import com.signomix.reports.port.in.ReportPort;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class WidgetBuilder {
@@ -50,7 +52,7 @@ public class WidgetBuilder {
     }
 
     public String buildTextWidget(User user, String text) {
-        logger.info("Building text widget with description: " + text);
+        logger.debug("Building text widget with description: " + text);
         StringBuilder content = new StringBuilder();
         content.append("<div class=\"widget-text\">");
         //content.append(escapeHtml(text));
@@ -64,7 +66,7 @@ public class WidgetBuilder {
 
     public String buildSymbolWidget(User user, Widget widget, String timeZone) {
         String errorString = null;
-        logger.info("Building symbol widget with query: " + widget.query);
+        logger.debug("Building symbol widget with query: " + widget.query);
         DataQuery query = null;
         try {
             query = DataQuery.parse(widget.query);
@@ -80,7 +82,7 @@ public class WidgetBuilder {
             );
         }
         String unitName = widget.unitName != null ? widget.unitName : "";
-        logger.info("Unit name: " + unitName);
+        logger.debug("Unit name: " + unitName);
         //Double value = getSingleValue(user, query);
         //Long timesamp = getTimestamp(user, query);
         Measurement measurement = getSingleValue(user, query);
@@ -110,7 +112,7 @@ public class WidgetBuilder {
 
     public String buildLedWidget(User user, Widget widget, String timeZone) {
         String errorString = null;
-        logger.info("Building LED widget with query: " + widget.query);
+        logger.debug("Building LED widget with query: " + widget.query);
         DataQuery query = null;
         try {
             query = DataQuery.parse(widget.query);
@@ -239,6 +241,7 @@ public class WidgetBuilder {
     }
 
     private String getTimestampFormatted(long timestamp, String timeZone) {
+        
         String formatted;
         // format timestamp as date and time
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(
@@ -246,6 +249,7 @@ public class WidgetBuilder {
         );
         sdf.setTimeZone(java.util.TimeZone.getTimeZone(timeZone));
         formatted = sdf.format(new java.util.Date(timestamp));
+        logger.debug("Formatting timestamp: " + timestamp + " with time zone: " + timeZone+ " formatted: " + formatted);
         return formatted;
     }
 }
