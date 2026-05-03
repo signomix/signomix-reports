@@ -16,6 +16,7 @@ class Widget {
     String rule;
     String dev_id;
     String channel;
+    int rounding;
 
     Widget(JsonNode widgetsNode, JsonNode itemsNode, int originalIndex) {
         this.originalIndex = originalIndex;
@@ -35,8 +36,14 @@ class Widget {
         dev_id = widgetsNode.path("dev_id").asText();
         channel = widgetsNode.path("channel").asText();
         String mSize = widgetsNode.path("mobile_size").asText("1");
+        String sRounding = widgetsNode.path("rounding").asText("-1");
 
         mobilePosition = widgetsNode.path("mobile_position").asInt(-1);
+        try {
+            rounding = Integer.parseInt(sRounding);
+        } catch (NumberFormatException e) {
+            rounding = -1;
+        }
         try {
             height = Integer.parseInt(mSize);
         } catch (NumberFormatException e) {
