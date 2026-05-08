@@ -24,7 +24,13 @@ public class WidgetBuilder {
         if (widget.title != null && !widget.title.isEmpty()) {
             content
                 .append("<div class=\"widget-title\">")
-                .append(AbstractWidgetBuilder.escapeHtml(widget.title))
+                .append(
+                    AbstractWidgetBuilder.escapeHtml(
+                        (widget.type.equalsIgnoreCase("buttonplus")
+                            ? ""
+                            : widget.title)
+                    )
+                )
                 .append("</div>\n");
         }
         switch (widget.type) {
@@ -46,6 +52,15 @@ public class WidgetBuilder {
             case "report":
                 content.append(
                     reportWidgetBuilder.buildContent(user, widget, timeZone)
+                );
+                break;
+            case "buttonplus":
+                content.append(
+                    new ButtonPlusWidgetBuilder().buildContent(
+                        user,
+                        widget,
+                        timeZone
+                    )
                 );
                 break;
             default:

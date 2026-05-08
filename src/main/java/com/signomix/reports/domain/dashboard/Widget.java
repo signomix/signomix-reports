@@ -1,6 +1,7 @@
 package com.signomix.reports.domain.dashboard;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 class Widget {
 
@@ -17,6 +18,7 @@ class Widget {
     String dev_id;
     String channel;
     int rounding;
+    JsonNode configuration;
 
     Widget(JsonNode widgetsNode, JsonNode itemsNode, int originalIndex) {
         this.originalIndex = originalIndex;
@@ -35,6 +37,17 @@ class Widget {
         rule = widgetsNode.path("range").asText();
         dev_id = widgetsNode.path("dev_id").asText();
         channel = widgetsNode.path("channel").asText();
+
+        String configStr = widgetsNode.path("config").asText();
+        if (configStr != null && !configStr.isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                configuration = mapper.readTree(configStr);
+            } catch (Exception e) {
+                configuration = null;
+            }
+        }
+
         String mSize = widgetsNode.path("mobile_size").asText("1");
         String sRounding = widgetsNode.path("rounding").asText("-1");
 
