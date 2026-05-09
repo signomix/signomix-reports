@@ -17,6 +17,7 @@ class Widget {
     String rule;
     String dev_id;
     String channel;
+    String dashboardId;
     int rounding;
     JsonNode configuration;
 
@@ -37,6 +38,7 @@ class Widget {
         rule = widgetsNode.path("range").asText();
         dev_id = widgetsNode.path("dev_id").asText();
         channel = widgetsNode.path("channel").asText();
+        dashboardId = widgetsNode.path("dashboardID").asText();
 
         String configStr = widgetsNode.path("config").asText();
         if (configStr != null && !configStr.isEmpty()) {

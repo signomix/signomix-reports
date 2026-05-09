@@ -12,8 +12,8 @@ public class ButtonPlusWidgetBuilder extends AbstractWidgetBuilder {
     public String buildContent(User user, Widget widget, String timeZone) {
         StringBuilder content = new StringBuilder();
         String dialogElement = "dialog-value-" + widget.originalIndex;
-        String okCallbackName = "okCallback_" + widget.originalIndex;
-        String cancelCallbackName = "cancelCallback_" + widget.originalIndex;
+        //String okCallbackName = "okCallback_" + widget.originalIndex;
+        //String cancelCallbackName = "cancelCallback_" + widget.originalIndex;
 
         String dialogContent = dialogValueBuilder.buildDialog(
             dialogElement,
@@ -22,24 +22,24 @@ public class ButtonPlusWidgetBuilder extends AbstractWidgetBuilder {
             new String[] { "OK", "Cancel" },
             "body",
             widget.configuration,
-            okCallbackName,
-            cancelCallbackName
+            SEND_COMMAND_FUNCTION_NAME,
+            CANCEL_FUNCTION_NAME
         );
         content.append(dialogContent);
 
         // Add callback functions scripts (using img onerror hack to ensure they are evaluated when injected via innerHTML)
         content
             .append("<img src=\"x\" onerror=\"")
-            .append("window.")
-            .append(okCallbackName)
-            .append(
-                " = function(param) { alert('NOT IMPLEMENTED - OK clicked, parameter: ' + param); }; "
-            )
-            .append("window.")
-            .append(cancelCallbackName)
-            .append(
-                " = function(param) { alert('NOT IMPLEMENTED - Cancel clicked, parameter: ' + param); }; "
-            )
+            //.append("window.")
+            //.append(okCallbackName)
+            //.append(
+            //    " = function(param) { alert('NOT IMPLEMENTED - OK clicked, parameter: ' + param); }; "
+            //)
+            //.append("window.")
+            //.append(cancelCallbackName)
+            //.append(
+            //    " = function(param) { alert('NOT IMPLEMENTED - Cancel clicked, parameter: ' + param); }; "
+            //)
             .append(
                 "this.parentNode.removeChild(this);\" style=\"display:none;\" />\n"
             );
