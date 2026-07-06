@@ -10,6 +10,7 @@ import com.signomix.reports.domain.charts.ChartGenerator;
 import com.signomix.reports.domain.charts.ChartReportRequest;
 import com.signomix.reports.port.in.AuthPort;
 import com.signomix.reports.port.in.ReportPort;
+import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.HeaderParam;
@@ -17,6 +18,9 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -35,42 +39,82 @@ public class ChartApi {
     @Inject
     ReportPort reportPort;
 
+    @Inject
+    Vertx vertx;
+
+    private CompletionStage<Response> runBlocking(
+        java.util.function.Supplier<Response> supplier
+    ) {
+        CompletableFuture<Response> future = new CompletableFuture<>();
+        vertx.executeBlocking(
+            promise -> {
+                try {
+                    Response resp = supplier.get();
+                    promise.complete(resp);
+                } catch (Throwable t) {
+                    logger.error("Error executing blocking task", t);
+                    promise.complete(
+                        Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                            .entity(t.getMessage())
+                            .build()
+                    );
+                }
+            },
+            false,
+            ar -> {
+                if (ar.succeeded()) {
+                    future.complete((Response) ar.result());
+                } else {
+                    logger.error("Failed to execute blocking task", ar.cause());
+                    future.complete(
+                        Response.status(
+                            Response.Status.INTERNAL_SERVER_ERROR
+                        ).build()
+                    );
+                }
+            }
+        );
+        return future;
+    }
+
     @POST
     @Produces("image/svg+xml")
-    public Response getChart(
+    public CompletionStage<Response> getChart(
         @HeaderParam("Authentication") String token,
         ChartDefinition chartDefinition
     ) {
-        User user = authPort.getUser(token);
-        if (user == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-        try {
+        return runBlocking(() -> {
+            User user = authPort.getUser(token);
+            if (user == null) {
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+            }
             ChartGenerator generator = new ChartGenerator();
-            String svg = generator.createChart(chartDefinition);
-            return Response.ok(svg).build();
-        } catch (Exception e) {
-            logger.error("Error generating chart", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(e.getMessage())
-                .build();
-        }
+            try {
+                String svg = generator.createChart(chartDefinition);
+                return Response.ok(svg).build();
+            } catch (IOException e) {
+                return Response.serverError().build();
+            }
+        });
     }
 
     @POST
     @Path("/from-report")
     @Produces("image/svg+xml")
-    public Response getChartFromReport(
+    public CompletionStage<Response> getChartFromReport(
         @HeaderParam("Authentication") String token,
         ChartReportRequest chartReportRequest
     ) {
-        User user = authPort.getUser(token);
-        if (user == null) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-        ReportDefinition reportDefinition = chartReportRequest.reportDefinition;
-        ChartDefinition chartDefinition = chartReportRequest.chartDefinition;
-        try {
+        return runBlocking(() -> {
+            User user = authPort.getUser(token);
+            if (user == null) {
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+            }
+            ReportDefinition reportDefinition =
+                chartReportRequest.reportDefinition;
+            ChartDefinition chartDefinition =
+                chartReportRequest.chartDefinition;
+
             // Create DataQuery from ReportDefinition
             DataQuery dataQuery = new DataQuery();
             if (
@@ -117,14 +161,14 @@ public class ChartApi {
 
             // Generate the chart
             ChartGenerator generator = new ChartGenerator();
-            String svg = generator.createChart(chartDefinition);
+            try {
+                String svg = generator.createChart(chartDefinition);
 
-            return Response.ok(svg).build();
-        } catch (Exception e) {
-            logger.error("Error generating chart from report", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Error generating chart from report: " + e.getMessage())
-                .build();
-        }
+                return Response.ok(svg).build();
+            } catch (IOException e) {
+                //TODO: generator.createErrorText(e.getMessage())
+                return Response.serverError().build();
+            }
+        });
     }
 }
