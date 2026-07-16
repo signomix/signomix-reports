@@ -140,12 +140,14 @@ public class TwinsReport extends Report implements ReportIface {
         result.setTimestamp(new Timestamp(System.currentTimeMillis()));
 
         try {
-            logger.info(
-                "Generating twins report for organization " +
-                    organization +
-                    " with query: " +
-                    query
-            );
+            if (logger.isDebugEnabled()) {
+                logger.debug(
+                    "Generating twins report for organization " +
+                        organization +
+                        " with query: " +
+                        query
+                );
+            }
 
             Dataset dataset = new Dataset(query.getEui());
             dataset.name = DATASET_NAME;
@@ -179,9 +181,11 @@ public class TwinsReport extends Report implements ReportIface {
                     jedis.hgetAll(key)
                 );
                 // log dataMap
-                logger.info(
-                    "Twins data for key " + key + ": " + dataMap.toString()
-                );
+                if (logger.isDebugEnabled()) {
+                    logger.debug(
+                        "Twins data for key " + key + ": " + dataMap.toString()
+                    );
+                }
                 DatasetHeader header = new DatasetHeader(dataMap.get("eui"));
                 for (String channel : channelNames) {
                     header.columns.add(channel);
@@ -215,9 +219,14 @@ public class TwinsReport extends Report implements ReportIface {
                         );
                         value = null;
                     }
-                    logger.info(
-                        "Channel: " + channelNames.get(i) + ", Value: " + value
-                    );
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(
+                            "Channel: " +
+                                channelNames.get(i) +
+                                ", Value: " +
+                                value
+                        );
+                    }
                     row.values.add(value);
                 }
                 dataset.data.add(row);
@@ -227,7 +236,9 @@ public class TwinsReport extends Report implements ReportIface {
                 config.put("name", dataMap.get("name"));
                 result.configs.put(dataset.eui, config);
             }
-            logger.info("sort order: " + query.getSortOrder());
+            if (logger.isDebugEnabled()) {
+                logger.debug("sort order: " + query.getSortOrder());
+            }
             if (
                 query.getSortOrder() != null &&
                 query.getSortOrder().equalsIgnoreCase("asc")

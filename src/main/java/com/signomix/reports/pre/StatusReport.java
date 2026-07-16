@@ -340,7 +340,7 @@ public class StatusReport extends Report implements ReportIface {
         // get data
         String sql = getSqlQuery(query, false);
         String eui = "";
-        //String deviceName = "";
+        String deviceName = "";
         String previousEui = "";
         ReportResult tmpResult = null;
         try (
@@ -351,47 +351,50 @@ public class StatusReport extends Report implements ReportIface {
                 stmt.setString(1, "%," + query.getGroup() + ",%");
             }
             try (ResultSet rs = stmt.executeQuery()) {
-                //double value;
-                long currentEuiHash = 0;
-                long previousEuiHash = 0;
-                Dataset currentDataset = null;
-
+                double value;
                 while (rs.next()) {
-                    String currentEui = rs.getString("eui");
-                    long euiHash = currentEui.hashCode();  // Szybsze porównanie
-
-                    if (euiHash != previousEuiHash) {
-                        if (currentDataset != null && !currentDataset.data.isEmpty()) {
-                            result.datasets.add(currentDataset);
-                        }
-                        String deviceName = rs.getString("name");
-                        currentDataset = new Dataset(deviceName);
-                        currentDataset.eui = currentEui;
-                        previousEuiHash = euiHash;
+                    eui = rs.getString("eui");
+                    if (!eui.equals(previousEui)) {
                         result.addDatasetHeader(header);
+                        if (dataset != null && dataset.data.size() > 0) {
+                            result.datasets.add(dataset);
+                        }
+                        deviceName = rs.getString("name");
+                        dataset = new Dataset(deviceName); //
+                        dataset.eui = eui;
+                        previousEui = eui;
                     }
 
-                    // Zredukuj tworzenie obiektów - użyj lokalnych zmiennych
-                    long timestamp = rs.getTimestamp("tstamp").getTime();
                     DatasetRow row = new DatasetRow();
-                    row.timestamp = timestamp;
-
-                    // Przenieś obsługę kanałów do osobnej metody lub zoptymalizuj pętlę
-                    for (String channelName : requestedChannelNames) {
+                    row.timestamp = rs.getTimestamp("tstamp").getTime();
+                    for (int i = 0; i < requestedChannelNames.length; i++) {
                         try {
-                            double value = rs.getDouble(channelName);
-                            row.values.add(rs.wasNull() ? null : value);
-                        } catch (SQLException ex) {
-                            // Zredukuj logowanie - raz na 100 błędów
-                            row.values.add(null);
+                            value = rs.getDouble(requestedChannelNames[i]);
+                            if (rs.wasNull()) {
+                                row.values.add(null);
+                            } else {
+                                row.values.add(value);
+                            }
+                        } catch (Exception ex) {
+                            logger.warn(
+                                    "Error getting value: " + ex.getMessage());
+                            // probably NaN value
+                            try {
+                                row.values.add(rs.getString(requestedChannelNames[i]));
+                            } catch (Exception e) {
+                                logger.warn("Error getting value as string: " + e.getMessage());
+                                row.values.add(null);
+                            }
                         }
                     }
-                    currentDataset.data.add(row);
+                    dataset.data.add(row);
                 }
-
-                if (currentDataset != null && !currentDataset.data.isEmpty()) {
-                    result.datasets.add(currentDataset);
+                result.addDatasetHeader(header);
+                if (dataset != null && dataset.data.size() > 0) {
+                    result.datasets.add(dataset);
                 }
+                // dataset.size = (long) dataset.data.size();
+                // result.addDataset(dataset);
             }
         } catch (SQLException ex) {
             logger.error("Error getting data: " + ex.getMessage());
