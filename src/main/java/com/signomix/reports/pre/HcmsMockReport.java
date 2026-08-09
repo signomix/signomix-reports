@@ -68,12 +68,19 @@ public class HcmsMockReport extends Report implements ReportIface {
         URL url = new URL(fileUrl);
         URLConnection urlConnection = url.openConnection();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            content.append(line);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line);
+            }
+        } finally {
+            // Explicitly close URLConnection to prevent resource leaks
+            try {
+                urlConnection.getInputStream().close();
+            } catch (Exception e) {
+                logger.warn("Error closing URLConnection input stream", e);
+            }
         }
-        reader.close();
         return content.toString();
     }
 

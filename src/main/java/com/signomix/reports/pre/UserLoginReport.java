@@ -115,7 +115,7 @@ public class UserLoginReport extends Report implements ReportIface {
                 } else {
                     ps.setLong(paramNo, defaultLimit);
                 }
-                ps.setLong(paramNo, query.getLimit());
+                paramNo++;
             }
             try (ResultSet rs = ps.executeQuery()) {
                 DatasetHeader header = new DatasetHeader(reportName);

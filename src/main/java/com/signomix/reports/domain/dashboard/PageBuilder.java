@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import com.signomix.common.User;
 import com.signomix.common.db.DashboardDao;
 import com.signomix.common.db.IotDatabaseException;
@@ -46,7 +47,8 @@ public class PageBuilder {
     @ConfigProperty(name = "signomix.organization.default")
     Long defaultOrganizationId;
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    @Inject
+    ObjectMapper objectMapper;
 
     private static final String COPYRIGHT = "<span style=\"font-size: 1.0rem;\" >created with&nbsp;</span><a style=\"font-size: 1.0rem;\" href=\"https://signomix.com\" target=\"_blank\">Signomix IoT platform</a>";
 

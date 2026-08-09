@@ -345,7 +345,7 @@ public class StatusReport extends Report implements ReportIface {
         ReportResult tmpResult = null;
         try (
                 Connection conn = olapDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql);) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setFetchSize(500);
             if (query.getGroup() != null && query.getGroup().indexOf(',') < 0) {
                 stmt.setString(1, "%," + query.getGroup() + ",%");

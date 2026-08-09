@@ -141,7 +141,7 @@ public class IntervalReport extends Report implements ReportIface {
         //logger.info("Time zone: " + zone);
         String channelColumnName = channelColumnNames.get(channelName);
         try (Connection conn = olapDs.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql);) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     DatasetRow row = new DatasetRow();

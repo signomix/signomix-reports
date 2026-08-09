@@ -37,6 +37,22 @@ public class TwinsReport extends Report implements ReportIface {
     private static final AtomicReference<JedisPooled> jedisRef =
         new AtomicReference<>();
 
+    static {
+        // Register shutdown hook to close JedisPooled connection pool
+        // This prevents resource leaks when application is restarted or JVM exits
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            JedisPooled jp = jedisRef.get();
+            if (jp != null) {
+                try {
+                    logger.info("Closing JedisPooled connection pool on shutdown");
+                    jp.close();
+                } catch (Exception e) {
+                    logger.error("Error closing JedisPooled on shutdown", e);
+                }
+            }
+        }));
+    }
+
     private static JedisPooled getJedis() {
         JedisPooled jp = jedisRef.get();
         if (jp == null) {
